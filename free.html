@@ -430,8 +430,8 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <label class="optt sub" id="fbanRow" hidden><input type="checkbox" id="fbanChk">BANしたヒーローも次の試合で使えない</label>
           <p class="hint">フィアレスの部屋では、ドラフト完了後にホストが「次の試合へ」を押すと、使用済みを引き継いでロビーに戻ります。部屋を作ったあとは変更できません。</p>
         </div>
-        <div class="row"><span class="lab">1手番の制限時間</span><div class="seg" id="segTimer" role="group" aria-label="制限時間"><button type="button" data-v="15">15秒</button><button type="button" data-v="30">30秒</button><button type="button" data-v="45">45秒</button><button type="button" data-v="60">60秒</button></div></div>
-        <div class="row" id="tmRow"><label class="optt" style="margin:0"><input type="checkbox" id="tmCustom"><b>指定時間入力</b>(5秒〜120秒)</label><span><input class="field num" id="tmSec" type="number" inputmode="numeric" min="5" max="120" step="1" value="30" style="width:90px" disabled> 秒</span></div>
+        <div class="row"><span class="lab">1手番の制限時間</span><div class="seg" id="segTimer" role="group" aria-label="制限時間"><button type="button" data-v="15">15秒</button><button type="button" data-v="30">30秒</button><button type="button" data-v="45">45秒</button><button type="button" data-v="60">60秒</button><button type="button" data-v="c">指定</button></div></div>
+        <div class="row" id="tmRow"><label class="lab" for="tmSec" style="margin:0">指定する秒数(5秒〜120秒)</label><span><input class="field num" id="tmSec" type="number" inputmode="numeric" min="5" max="120" step="1" value="20" style="width:90px"> 秒</span></div>
         <div class="row"><span class="lab">タイマー延長</span><div class="seg" id="segExt" role="group" aria-label="タイマー延長"><button type="button" data-v="pool">時間プール</button><button type="button" data-v="reset">リセット</button><button type="button" data-v="half">半分追加</button><button type="button" data-v="none">なし</button></div></div>
         <div class="row" id="poolRow"><label class="lab" for="poolSec">チームの時間プール(秒)</label><input class="field num" id="poolSec" type="number" inputmode="numeric" min="10" max="600" step="5" style="width:110px"></div>
         <p class="hint" id="extHint"></p>
@@ -515,7 +515,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261106-17L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261106-18L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="free";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -609,7 +609,7 @@ async function hostLogin(u,p,silent){
 }
 var off=0,connected=false;
 var localSel="",q="";
-var cs={custom:false,leader:false,fearless:false,fbans:false,size:3,timer:30,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
+var cs={custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
 function toast(t){var el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
@@ -865,8 +865,8 @@ function renderCreateBtn(){
 }
 function renderCreate(){
   $$("#segSize button").forEach(function(b){b.classList.toggle("on",+b.dataset.v===cs.size)});
-  $$("#segTimer button").forEach(function(b){b.classList.toggle("on",!cs.custom&&+b.dataset.v===cs.timer);b.disabled=!!cs.custom;b.style.opacity=cs.custom?".4":""});
-  $("#tmCustom").checked=!!cs.custom;$("#tmSec").disabled=!cs.custom;
+  $$("#segTimer button").forEach(function(b){b.classList.toggle("on",b.dataset.v==="c"?!!cs.custom:(!cs.custom&&+b.dataset.v===cs.timer))});
+  $("#tmRow").hidden=!cs.custom;
   if(cs.custom&&document.activeElement!==$("#tmSec"))$("#tmSec").value=cs.timer;
   $$("#segBans button").forEach(function(b){b.classList.toggle("on",+b.dataset.v===cs.bans)});
   $$("#segExt button").forEach(function(b){b.classList.toggle("on",b.dataset.v===cs.ext)});
@@ -905,7 +905,7 @@ function wireCreate(){
   $("#segExt").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.ext=b.dataset.v;renderCreate()});
   $("#poolSec").addEventListener("input",function(){var v=Math.round(+$("#poolSec").value);if(v>=10&&v<=600)cs.pool=v;renderCreate()});
   $("#poolSec").addEventListener("change",function(){var v=Math.round(+$("#poolSec").value);cs.pool=v>=10?Math.min(600,v):10;$("#poolSec").value=cs.pool;renderCreate()});
-  $("#segTimer").addEventListener("click",function(e){var b=e.target.closest("button");if(!b||cs.custom)return;cs.timer=+b.dataset.v;renderCreate()});
+  $("#segTimer").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;if(b.dataset.v==="c"){cs.custom=true;if(!(cs.timer>=5&&cs.timer<=120))cs.timer=20}else{cs.custom=false;cs.timer=+b.dataset.v}renderCreate()});
   function normTm(v){v=Math.round(+v||0);return Math.max(5,Math.min(120,v))}      /* 指定時間: 5秒〜120秒(1秒単位) */
   $("#nxSwap").addEventListener("click",function(){nxClose();act({a:"next",swap:true})});
   $("#nxKeep").addEventListener("click",function(){nxClose();act({a:"next",swap:false})});
@@ -914,7 +914,6 @@ function wireCreate(){
   $("#gateBtn").addEventListener("click",function(){$("#gateMsg").textContent="確認中…";hostLogin($("#gateUser").value.trim(),$("#gatePass").value,false).then(function(ok){if(ok){$("#gateMsg").textContent="";$("#gatePass").value=""}})});
   $("#gatePass").addEventListener("keydown",function(e){if(e.key==="Enter")$("#gateBtn").click()});
   $("#gateOut").addEventListener("click",function(){hostOK=false;hostAuth=null;lsDel("vgd_ha");refreshEntry()});
-  $("#tmCustom").addEventListener("change",function(){cs.custom=this.checked;if(!cs.custom&&[15,30,45,60].indexOf(cs.timer)<0)cs.timer=30;renderCreate()});
   $("#tmSec").addEventListener("input",function(){var v=+this.value;if(v>=5&&v<=120&&v===Math.round(v)){cs.timer=v;renderCreate()}});
   $("#tmSec").addEventListener("change",function(){cs.timer=normTm(this.value);this.value=cs.timer;renderCreate()});
   $("#segBans").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.bans=+b.dataset.v;setRows();renderCreate()});
