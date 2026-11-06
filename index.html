@@ -359,8 +359,19 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 @media (max-width:420px){.teams{grid-template-columns:1fr}}
 /* ロビーの表示切り替え: PC表示=HOMEとAWAYを左右に並べる(狭い画面でも) / モバイル標準=縦に並べる(広い画面では幅をしぼる) */
 .lay-old .teams{grid-template-columns:1fr 1fr}
-.lay-new .teams{grid-template-columns:1fr}
-.lay-new #lobby{max-width:560px;margin-left:auto;margin-right:auto}
+/* モバイル標準のロビー: ドラフト中と同じ「HOME / AWAY の帯に、席のカードを横一列に」並べる */
+.lay-new .teams{grid-template-columns:1fr;gap:8px}
+.lay-new .team{padding:10px 10px 8px;border-top:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px}
+.lay-new .team.home{border-left-color:var(--home)}
+.lay-new .team.away{border-left-color:var(--away)}
+.lay-new .team h3{font-size:13px;margin-bottom:8px}
+.lay-new .seatrow{display:flex;gap:6px}
+.lay-new .seat{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;position:relative;margin:0;padding:18px 3px 6px;min-height:84px;text-align:center}
+.lay-new .seat .sn{position:absolute;top:3px;left:6px;font-size:11px}
+.lay-new .seat .who{max-width:100%;font-size:12px;line-height:1.25;white-space:normal;word-break:break-all;overflow:hidden}
+.lay-new .seat .who small{display:block;margin:1px 0 0}
+.lay-new .seat>span:last-child{justify-content:center;flex-wrap:wrap;gap:4px;margin-top:auto}
+.lay-new .seat.empty .who{font-size:11px}
 @media (max-width:560px){.lay-old .teams{gap:8px}.lay-old .teams .seat{padding-left:6px;padding-right:6px}}
 @media (prefers-reduced-motion:reduce){.cell.cur{animation:none!important}}
 </style>
@@ -504,7 +515,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261106-16L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261106-17L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1034,7 +1045,7 @@ function renderLobby(){
       else if(me.locked)acts="";
       else acts='<button class="btn sm '+t+'" type="button" data-sit="'+t+'"'+(seats.length>=N?" disabled":"")+'>'+teamJa(t)+'に参加</button>'+(S.cfg.leader&&isHost?' <button class="btn sm pri" type="button" data-sit="'+t+'" data-lead="1"'+(seats.length>=N?" disabled":"")+'>'+teamJa(t)+'に参加(代表者)</button>':'');
     }
-    html+='<div class="team '+t+'"><h3><span>'+(t==="home"?"HOME":"AWAY")+'</span><span class="tr'+(D.teamReady[t]?" ok":"")+'">'+(D.teamReady[t]?"チーム準備完了":(S.cfg.leader?(D.leaders[t]?"代表者 未準備":"代表者なし"):"準備 "+rc+"/"+N))+'</span></h3>'+rows+'<div class="acts">'+acts+'</div></div>';
+    html+='<div class="team '+t+'"><h3><span>'+(t==="home"?"HOME":"AWAY")+'</span><span class="tr'+(D.teamReady[t]?" ok":"")+'">'+(D.teamReady[t]?"チーム準備完了":(S.cfg.leader?(D.leaders[t]?"代表者 未準備":"代表者なし"):"準備 "+rc+"/"+N))+'</span></h3><div class="seatrow">'+rows+'</div><div class="acts">'+acts+'</div></div>';
   });
   $("#teams").innerHTML=html;
   var rb="";
