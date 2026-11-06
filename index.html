@@ -321,6 +321,7 @@ body.has-fab .wrap{padding-bottom:110px}
 .tile{display:block;padding:0;aspect-ratio:1/1;overflow:hidden;border-radius:8px}
 .tile .mono{position:absolute;inset:0;width:100%;height:100%;border-radius:0;font-size:22px}
 .tile .mono.hv{font-size:0}
+.tile:has(.mono.hv) .nm{opacity:0}      /* 画像に名前が入っているので、重ねる文字は隠す(画像がない人だけ文字で出す)。重ねたい場合はこの行を消す */
 .tile .nm{position:absolute;left:0;right:0;bottom:0;z-index:1;max-width:none;padding:18px 2px 3px;text-align:center;font-size:11px;font-weight:700;line-height:1.15;color:#fff;text-shadow:0 1px 3px #000;background:linear-gradient(to top,rgba(6,7,18,.94),rgba(6,7,18,0))}
 .tile .nm.lg{font-size:10px}
 .tile .nm.xl{font-size:9px;letter-spacing:-.02em}
@@ -498,7 +499,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261106-13L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261106-15L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -545,7 +546,7 @@ function monoHTML(n){
 }
 /* 画像の拡大率と位置をパーセントで指定して、1人分(正方形)だけを見せる。どの大きさの枠でも同じ切り出しになる */
 function buildHeroCss(){
-  var css="",CROP=168,OX=27,OY=5,PX=243.3,PY=243.5;
+  var css="",CROP=232,OX=0,OY=0,PX=243.3,PY=243.5;      /* 元のタイル全体(名前入り)を表示。以前の切り出しに戻すときは CROP=168,OX=27,OY=5 */
   HEROES.forEach(function(h,i){
     var p=HERO_POS[h],sh=p&&SHEETS[p[0]];if(!sh)return;
     var cx=Math.round(sh.x+PX*p[1])+OX,cy=Math.round(sh.y+PY*p[2])+OY;
