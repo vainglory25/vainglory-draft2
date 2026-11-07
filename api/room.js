@@ -217,7 +217,7 @@ function extMode(S) { return (S.cfg && S.cfg.ext) || "reset"; }
 function newState(cfg, host) {
   return { cfg: cfg, host: host, created: Date.now(), v: 0, phase: "lobby", turn: 0, deadline: 0, startsAt: 0,
     pendingHero: "", pendingTurn: -1, resetT: -1, pausedAt: 0, pool: { home: 0, away: 0 }, cands: {}, log: {}, seats: { home: [], away: [] }, members: {}, toks: {}, used: [], game: 1,
-    avail: null, bp: null, res: "", series: cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null };
+    avail: null, bp: null, res: "", tn: { home: "", away: "" }, series: cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null };
 }
 
 /* 送信者 uid の操作 m を検証して反映する。変化したら changed:true、メッセージは msg */
@@ -272,6 +272,12 @@ function handle(S, uid, m, body) {
     case "kick":
       if (!isHost || ph !== "lobby" || typeof m.u !== "string" || !mem[m.u] || m.u === uid) break;
       mem[m.u].team = ""; mem[m.u].ready = false; mem[m.u].leader = false; mem[m.u].locked = false; changed = true; break;
+    case "tname":      /* チーム名: ホストがロビーで入力する。全員に表示される */
+      if (!isHost || ph !== "lobby" || (m.t !== "home" && m.t !== "away") || typeof m.n !== "string") break;
+      S.tn = S.tn || { home: "", away: "" };
+      var nn = m.n.replace(/[\u0000-\u001f\u007f<>]/g, "").trim().slice(0, 12);
+      if (S.tn[m.t] !== nn) { S.tn[m.t] = nn; changed = true; }
+      break;
     case "next":      /* 次の試合へ(フィアレス、またはシリーズ戦の部屋): フィアレスなら今の試合のピック(設定ならBANも)を使用済みにして、ロビーへ */
     case "reset":
       if (!isHost || ph !== "done") break;
@@ -292,6 +298,7 @@ function handle(S, uid, m, body) {
         S.game = (S.game || 1) + 1;
         if (sr) { if (S.res) sr.hist.push({ g: S.game - 1, w: (S.res === "home") !== sr.flip ? "A" : "B" }); if (swp) sr.flip = !sr.flip; }
         S.res = "";
+        if (swp && S.tn) { var tt = S.tn.home; S.tn.home = S.tn.away; S.tn.away = tt; }      /* チーム名もチームについていく */
         if (swp) Object.keys(mem).forEach(function (k) { if (mem[k].team === "home") mem[k].team = "away"; else if (mem[k].team === "away") mem[k].team = "home"; });      /* 次の試合は、ホームとアウェイを入れ替える(席の並び・代表者はそのまま) */
       } else {
         if (S.cfg.fearless) S.used = [];      /* 「最初から」: 使用済みを全部戻す */
