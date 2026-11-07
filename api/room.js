@@ -217,7 +217,7 @@ function extMode(S) { return (S.cfg && S.cfg.ext) || "reset"; }
 function newState(cfg, host) {
   return { cfg: cfg, host: host, created: Date.now(), v: 0, phase: "lobby", turn: 0, deadline: 0, startsAt: 0,
     pendingHero: "", pendingTurn: -1, resetT: -1, pausedAt: 0, pool: { home: 0, away: 0 }, cands: {}, log: {}, seats: { home: [], away: [] }, members: {}, toks: {}, used: [], game: 1,
-    avail: null, bp: null, res: "", series: { wins: { A: 0, B: 0 }, hist: [], flip: false } };
+    avail: null, bp: null, res: "", series: cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null };
 }
 
 /* 送信者 uid の操作 m を検証して反映する。変化したら changed:true、メッセージは msg */
@@ -296,7 +296,7 @@ function handle(S, uid, m, body) {
       } else {
         if (S.cfg.fearless) S.used = [];      /* 「最初から」: 使用済みを全部戻す */
         S.game = 1;
-        S.series = { wins: { A: 0, B: 0 }, hist: [], flip: false };
+        S.series = S.cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null;
         S.res = "";
       }
       S.phase = "lobby"; S.turn = 0; S.deadline = 0; S.startsAt = 0; S.pendingHero = ""; S.pendingTurn = -1; S.resetT = -1; S.pausedAt = 0;
@@ -467,7 +467,7 @@ function validCfg(c) {
   var fl = c.fearless === true;
   var blind = c.blind === true;
   if (blind) { ext = "none"; pool = 0; }      /* ブラインドは、同時に出すので延長はなし */
-  var sv = Math.round(+c.series), series = (sv === 99 || (sv >= 3 && sv <= 21 && sv % 2 === 1)) ? sv : 99;      /* シリーズ戦は常に記録する: 99=回数指定なし、奇数=BO○ */
+  var sv = Math.round(+c.series), series = !(sv > 0) ? 0 : (sv === 99 || (sv >= 3 && sv <= 21 && sv % 2 === 1)) ? sv : 99;      /* シリーズ戦の記録: 0=なし、99=回数指定なし、奇数=BO○ */
   var hcls = null, cost = null, budget = 0, randPool = 0;
   if (c.rolePick === true) {
     hcls = {};
