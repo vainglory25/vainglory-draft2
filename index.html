@@ -472,7 +472,8 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <p class="hint">コストの初期値は、用意した表のとおりです(1〜4点)。ヒーローごとに変更できます。予算を使い切って残りの枠が埋まらなくなる選び方は、選べないようになっています。</p>
         </div>
         <div class="optbox">
-          <div class="row" style="margin:0"><span class="lab"><b>シリーズ戦の記録</b></span><div class="seg" id="segSer" role="group" aria-label="シリーズ戦"><button type="button" data-v="0">回数指定なし</button><button type="button" data-v="1">回数指定あり</button></div></div>
+          <label class="optt"><input type="checkbox" id="serChk"><b>シリーズ戦の記録</b>(ドラフト後に、ホストが勝った側を記録する)</label>
+          <div class="row" id="serBox" hidden style="margin-top:8px"><span class="lab">試合数</span><div class="seg" id="segSer" role="group" aria-label="シリーズ戦"><button type="button" data-v="0">回数指定なし</button><button type="button" data-v="1">回数指定あり</button></div></div>
           <div class="row" id="serRow" hidden style="margin-top:8px"><label class="lab" for="serN">試合数(奇数 3〜21)</label><span><input class="field num" id="serN" type="number" inputmode="numeric" min="3" max="21" step="2" value="3" style="width:90px"> 試合 (先に <b id="serNeed">2</b> 勝で終了)</span></div>
           <p class="hint">ドラフトの完了後に、ホストが勝った側を記録します。「次の試合へ」でロビーに戻ります。回数指定なしは、ホストが「最初から」を押すまで続きます。フィアレスなど、ほかのモードと一緒に使えます。</p>
         </div>
@@ -565,7 +566,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261107-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261107-3L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -665,7 +666,7 @@ HEROES.forEach(function(h){COST0[h]=2});
 ["チャーンウォーカー", "ヴィオラ", "トニー"].forEach(function(h){COST0[h]=4});
 ["オゾ", "ソー", "ヴァーリア"].forEach(function(h){COST0[h]=1});
 var HCLS={};ROLES.forEach(function(g){g.list.forEach(function(h){HCLS[h]=g.k==="captain"?"C":g.k==="jungler"?"J":"L"})});
-var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:Object.assign({},COST0),series:99,serUse:false,serN:3,swap:false,blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
+var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:Object.assign({},COST0),series:99,serChk:false,serUse:false,serN:3,swap:false,blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
 function toast(t){var el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
@@ -915,7 +916,7 @@ async function createRoom(){
   var msg=$("#createMsg"),btn=$("#createBtn");
   if(!needName(msg))return;
   btn.disabled=true;msg.textContent="ルームを作成中…";
-  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serUse?cs.serN:99,randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
+  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serChk?(cs.serUse?cs.serN:99):0,randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
   joinSpec=false;
   var r=await apiCall({op:"create",uid:myUid,tok:myTok,name:myName,cfg:cfg,free:IS_FREE,hu:hostAuth&&hostAuth.u,hp:hostAuth&&hostAuth.p});
   btn.disabled=false;
@@ -1001,7 +1002,7 @@ function renderCreate(){
   if(document.activeElement!==$("#budPts"))$("#budPts").value=cs.budPts;
   if(cs.bud&&$("#costDet").open)renderCostPool();
   $$("#segSer button").forEach(function(b){b.classList.toggle("on",(+b.dataset.v===1)===cs.serUse)});
-  $("#serRow").hidden=!cs.serUse;$("#serNeed").textContent=Math.ceil(cs.serN/2);
+  $("#serChk").checked=cs.serChk;$("#serBox").hidden=!cs.serChk;$("#serRow").hidden=!(cs.serChk&&cs.serUse);$("#serNeed").textContent=Math.ceil(cs.serN/2);
   if(document.activeElement!==$("#serN"))$("#serN").value=cs.serN;
   $("#swapChk").checked=cs.swap;
   $("#blindRow").hidden=!cs.blind;
@@ -1019,7 +1020,7 @@ function renderCreate(){
   $("#fixedCount").textContent=cs.fixed.length?"("+cs.fixed.length+"人)":"";
   $("#fixedList").innerHTML=cs.fixed.map(function(h){return '<span class="fchip">'+monoHTML(h)+esc(h)+'</span>'}).join("");
   renderFixedPool();
-  $("#cSum").textContent=cs.size+"v"+cs.size+" / 各手番 "+cs.timer+"秒("+(cs.ext==="pool"?"チーム時間プール "+cs.pool+"秒":cs.ext==="reset"?"リセット":cs.ext==="none"?"延長なし":"半分追加")+") / "+(cs.bans?"BAN 各チーム"+cs.bans+"人(計"+cs.bans*2+"人)":"BANなし")+" + 固定BAN "+cs.fixed.length+"人 / 全 "+cs.rows.length+" 行"+(cs.leader?" / 代表者モード":"")+(cs.fearless?" / フィアレス"+(cs.fbans?"(BAN含む)":""):"")+(cs.mirror?" / ミラーあり":"")+(cs.blind?" / ブラインド"+(cs.blindAll?"(まとめて)":"(1行ずつ)"):"")+(cs.role?" / ロール別":"")+(cs.rp>0?" / ランダムプール"+cs.rp+"体":"")+(cs.bud?" / 予算制"+cs.budPts+"点":"")+" / シリーズ("+(cs.serUse?"BO"+cs.serN:"回数指定なし")+")"+(cs.swap?" / 次の試合で入れ替え":"");
+  $("#cSum").textContent=cs.size+"v"+cs.size+" / 各手番 "+cs.timer+"秒("+(cs.ext==="pool"?"チーム時間プール "+cs.pool+"秒":cs.ext==="reset"?"リセット":cs.ext==="none"?"延長なし":"半分追加")+") / "+(cs.bans?"BAN 各チーム"+cs.bans+"人(計"+cs.bans*2+"人)":"BANなし")+" + 固定BAN "+cs.fixed.length+"人 / 全 "+cs.rows.length+" 行"+(cs.leader?" / 代表者モード":"")+(cs.fearless?" / フィアレス"+(cs.fbans?"(BAN含む)":""):"")+(cs.mirror?" / ミラーあり":"")+(cs.blind?" / ブラインド"+(cs.blindAll?"(まとめて)":"(1行ずつ)"):"")+(cs.role?" / ロール別":"")+(cs.rp>0?" / ランダムプール"+cs.rp+"体":"")+(cs.bud?" / 予算制"+cs.budPts+"点":"")+(cs.serChk?" / シリーズ("+(cs.serUse?"BO"+cs.serN:"回数指定なし")+")":"")+(cs.swap?" / 次の試合で入れ替え":"");
   renderCreateBtn();
 }
 function groupsHTML(filter,tileFn){
@@ -1058,6 +1059,7 @@ function wireCreate(){
   $("#bq").addEventListener("input",renderCostPool);
   $("#bPool").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var h=b.dataset.h;cs.cost[h]=cs.cost[h]>=5?1:cs.cost[h]+1;renderCostPool()});
   $("#costReset").addEventListener("click",function(){cs.cost=Object.assign({},COST0);renderCostPool()});
+  $("#serChk").addEventListener("change",function(){cs.serChk=this.checked;renderCreate()});
   $("#segSer").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.serUse=+b.dataset.v===1;renderCreate()});
   $("#segExt").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.ext=b.dataset.v;renderCreate()});
   $("#poolSec").addEventListener("input",function(){var v=Math.round(+$("#poolSec").value);if(v>=10&&v<=600)cs.pool=v;renderCreate()});
@@ -1292,7 +1294,7 @@ function renderTurn(){
   var tb=$("#turnbar");
   if(S.phase==="done"){
     var si=serInfo(),btns="";
-    if(isHost)btns='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-next="1"'+(si&&si.over?' disabled':'')+'>次の試合へ</button><button class="btn ghost" type="button" data-reset="1">最初から</button></div>';
+    if(isHost)btns='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-next="1"'+(si&&si.over?' disabled':'')+'>次の試合へ</button><button class="btn ghost" type="button" data-reset="1">'+(S.cfg.fearless||S.cfg.series?"最初から":"ロビーに戻す")+'</button></div>';
     var ser="";
     if(si)ser='<div class="serbox"><span>'+serLabel()+'</span>'+(isHost?'<span>この試合の勝者:</span><button class="btn sm'+(S.res==="home"?" pri":"")+'" type="button" data-res="home">HOME勝ち</button><button class="btn sm'+(S.res==="away"?" pri":"")+'" type="button" data-res="away">AWAY勝ち</button>':(S.res?'<span>この試合: '+(S.res==="home"?"HOME":"AWAY")+'勝ち</span>':''))+(si.over&&isHost?'<span class="note">シリーズが決着しました。「最初から」で新しいシリーズを始められます。</span>':'')+'</div>';
     tb.className="turnbar";
@@ -1421,7 +1423,7 @@ function wireRoom(){
     else if(e.target.closest("[data-next]")){if(!e.target.closest("[data-next]").disabled)nextGame()}
     else if(e.target.closest("[data-res]")&&isHost)act({a:"result",w:e.target.closest("[data-res]").dataset.res});
     else if(e.target.closest("[data-reset]")){
-      if(!window.confirm((S.cfg.fearless?"使用済みヒーローと、":"")+"シリーズの勝敗の記録をすべてリセットして、第1試合からやり直します。よろしいですか?"))return;
+      if((S.cfg.fearless||S.cfg.series)&&!window.confirm((S.cfg.fearless?"使用済みヒーロー":"")+(S.cfg.fearless&&S.cfg.series?"と":"")+(S.cfg.series?"シリーズの勝敗の記録":"")+"をすべてリセットして、第1試合からやり直します。よろしいですか?"))return;
       act({a:"reset"});
     }
     else if(e.target.closest("[data-pause]")&&isHost)act({a:"pause"});
