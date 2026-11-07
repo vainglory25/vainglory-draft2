@@ -113,10 +113,10 @@ function pickedBy(S, team) {
 }
 function quotaOf(cfg) { return { C: 1, J: 1, L: cfg.size - 2 }; }
 /* BANなら「取られていない」だけ。PICKは、ロール別・予算制の条件も見る */
-function pickable(S, h, team, type) {
+function pickable(S, h, team, type, extra) {
   if (taken(S, h, team, type)) return false;
   if (type !== "P") return true;
-  var cfg = S.cfg, mine = pickedBy(S, team), left = cfg.size - mine.length - 1;
+  var cfg = S.cfg, mine = pickedBy(S, team).concat((extra || []).filter(function (x) { return x !== h; })), left = cfg.size - mine.length - 1;
   if (left < 0) return false;
   var cnt = { C: 0, J: 0, L: 0 }, spent = 0;
   mine.forEach(function (x) { if (cfg.hcls) cnt[cfg.hcls[x]]++; if (cfg.cost) spent += cfg.cost[x]; });
@@ -139,14 +139,22 @@ function pickable(S, h, team, type) {
   return true;
 }
 function cleanName(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u115f\u1160\u17b4\u17b5\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufeff\uffa0<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 14); }
-function autoHero(S, team, type, avoid) {
-  avoid = avoid || [];
-  var ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && pickable(S, h, team, type); });
+function autoHero(S, team, type, avoid, extra) {
+  avoid = (avoid || []).concat(extra || []);
+  var ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && pickable(S, h, team, type, extra); });
   if (!ok.length) ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type); });      /* 条件を満たす人がいなければ、取られていない誰か */
   return ok.length ? ok[Math.floor(Math.random() * ok.length)] : "";
 }
 function finishDraft(S) { S.phase = "done"; S.deadline = 0; S.cands = {}; S.pausedAt = 0; S.bp = null; S.code = 3001 + Math.floor(Math.random() * 6999); S.leaders = S.leaders || null; }      /* 3001〜9999 */
-function emptyBp() { return { home: { h: "", ok: false, auto: false }, away: { h: "", ok: false, auto: false } }; }
+function emptyBp() { return { home: { hs: [], ok: false, auto: false }, away: { hs: [], ok: false, auto: false } }; }
+/* ブラインドの「1回に出す範囲」[s,e): 1行ずつなら2手番、まとめてなら、同じ種類(BAN/PICK)が続く行ぜんぶ */
+function stepEnd(cfg, s) {
+  if (!cfg.blindAll) return s + 2;
+  var r = Math.floor(s / 2), t = cfg.rows[r];
+  while (r < cfg.rows.length && cfg.rows[r] === t) r++;
+  return r * 2;
+}
+function stepN(S) { return (stepEnd(S.cfg, S.turn) - S.turn) / 2; }      /* 各チームが、この回に選ぶ数 */
 /* ランダムプール: 今回使えるヒーローを、固定BAN・使用済みを除いた中から無作為に選ぶ(ロール別のときは、各役割が足りるように) */
 function sampleAvail(S) {
   var cfg = S.cfg, pool = cfg.heroes.filter(function (h) { return cfg.fixedBans.indexOf(h) < 0 && (S.used || []).indexOf(h) < 0; });
@@ -180,33 +188,36 @@ function advance(S, hero, auto, by) {
     var nt = D.turns[S.turn]; delete S.cands[D.actorAt(nt)];
   }
 }
-/* ブラインド: 両チームの確定が揃った(または時間切れ)ので、2手番ぶんをまとめて公開して進める */
+/* ブラインド: 両チームの確定が揃った(または時間切れ)ので、この回の手番ぶんをまとめて公開して進める */
 function resolveBlind(S, D) {
-  var bp = S.bp || emptyBp();
-  [D.turns[S.turn], D.turns[S.turn + 1]].forEach(function (tn, i) {
-    var b = bp[tn.team];
-    S.log[S.turn + i] = { hero: b.h || "", by: D.actorAt(tn) || "", auto: !!b.auto };
-  });
-  S.bp = emptyBp(); S.cands = {}; S.pendingHero = ""; S.pendingTurn = -1; S.turn += 2;
+  var bp = S.bp || emptyBp(), e = stepEnd(S.cfg, S.turn), used = { home: 0, away: 0 };
+  for (var i = S.turn; i < e; i++) {
+    var tn = D.turns[i], b = bp[tn.team];
+    S.log[i] = { hero: b.hs[used[tn.team]++] || "", by: D.actorAt(tn) || "", auto: !!b.auto };
+  }
+  S.bp = emptyBp(); S.cands = {}; S.pendingHero = ""; S.pendingTurn = -1; S.turn = e;
   if (S.turn >= D.turns.length) finishDraft(S);
   else S.deadline = clock(S) + S.cfg.timer * 1000;
 }
-/* 自分(uid)が、いま操作できる手番の番号。なければ -1。ブラインドでは、確定後は -1 */
-function myTurnIx(S, D, uid) {
-  if (S.phase !== "draft" || !D.cur) return -1;
-  if (!S.cfg.blind) return D.actor === uid ? S.turn : -1;
-  for (var i = S.turn; i < S.turn + 2; i++) {
-    var tn = D.turns[i];
-    if (tn && D.actorAt(tn) === uid) { var b = (S.bp || {})[tn.team]; return b && b.ok ? -1 : i; }
+/* 自分(uid)が、いま操作できる手番 {team,type,ix}。なければ null。ブラインドでは、確定後は null。
+   ブラインドで1回に2つ以上選ぶとき(まとめて)は、代表者モードなら代表者、そうでなければチームの誰でも */
+function myAct(S, D, uid) {
+  if (S.phase !== "draft" || !D.cur) return null;
+  if (!S.cfg.blind) return D.actor === uid ? { team: D.cur.team, type: D.cur.type, ix: S.turn } : null;
+  var e = stepEnd(S.cfg, S.turn), n = (e - S.turn) / 2;
+  for (var i = S.turn; i < e; i++) {
+    var tn = D.turns[i], b = (S.bp || {})[tn.team];
+    var mine = n > 1 ? (S.cfg.leader ? D.leaders[tn.team] === uid : D.seats[tn.team].indexOf(uid) >= 0) : D.actorAt(tn) === uid;
+    if (mine) return b && b.ok ? null : { team: tn.team, type: tn.type, ix: i, n: n };
   }
-  return -1;
+  return null;
 }
 function clock(S) { return S.pausedAt || Date.now(); }      /* 一時停止中は止まった時刻 */
 function extMode(S) { return (S.cfg && S.cfg.ext) || "reset"; }
 function newState(cfg, host) {
   return { cfg: cfg, host: host, created: Date.now(), v: 0, phase: "lobby", turn: 0, deadline: 0, startsAt: 0,
     pendingHero: "", pendingTurn: -1, resetT: -1, pausedAt: 0, pool: { home: 0, away: 0 }, cands: {}, log: {}, seats: { home: [], away: [] }, members: {}, toks: {}, used: [], game: 1,
-    avail: null, bp: null, res: "", series: cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null };
+    avail: null, bp: null, res: "", series: { wins: { A: 0, B: 0 }, hist: [], flip: false } };
 }
 
 /* 送信者 uid の操作 m を検証して反映する。変化したら changed:true、メッセージは msg */
@@ -264,9 +275,8 @@ function handle(S, uid, m, body) {
     case "next":      /* 次の試合へ(フィアレス、またはシリーズ戦の部屋): フィアレスなら今の試合のピック(設定ならBANも)を使用済みにして、ロビーへ */
     case "reset":
       if (!isHost || ph !== "done") break;
-      if (m.a === "next" && !S.cfg.fearless && !S.cfg.series) break;
       if (m.a === "next") {
-        var sr = S.series, need = S.cfg.series === 99 ? 1e9 : Math.ceil((S.cfg.series || 0) / 2);
+        var sr = S.series, need = S.cfg.series === 99 ? 1e9 : Math.ceil((S.cfg.series || 0) / 2), swp = S.cfg.swap === true;
         if (sr && (sr.wins.A >= need || sr.wins.B >= need)) { msg = "シリーズは決着しています。「最初から」で新しいシリーズを始めてください"; break; }
         var nu = (S.used || []).slice(), nb = S.cfg.rows.split("").filter(function (x) { return x === "B"; }).length;
         if (S.cfg.fearless) {
@@ -280,13 +290,13 @@ function handle(S, uid, m, body) {
           S.used = nu;
         }
         S.game = (S.game || 1) + 1;
-        if (sr) { if (S.res) sr.hist.push({ g: S.game - 1, w: (S.res === "home") !== sr.flip ? "A" : "B" }); if (m.swap === true) sr.flip = !sr.flip; }
+        if (sr) { if (S.res) sr.hist.push({ g: S.game - 1, w: (S.res === "home") !== sr.flip ? "A" : "B" }); if (swp) sr.flip = !sr.flip; }
         S.res = "";
-        if (m.swap === true) Object.keys(mem).forEach(function (k) { if (mem[k].team === "home") mem[k].team = "away"; else if (mem[k].team === "away") mem[k].team = "home"; });      /* 次の試合は、ホームとアウェイを入れ替える(席の並び・代表者はそのまま) */
+        if (swp) Object.keys(mem).forEach(function (k) { if (mem[k].team === "home") mem[k].team = "away"; else if (mem[k].team === "away") mem[k].team = "home"; });      /* 次の試合は、ホームとアウェイを入れ替える(席の並び・代表者はそのまま) */
       } else {
         if (S.cfg.fearless) S.used = [];      /* 「最初から」: 使用済みを全部戻す */
-        if (S.cfg.fearless || S.cfg.series) S.game = 1;
-        if (S.series) S.series = { wins: { A: 0, B: 0 }, hist: [], flip: false };
+        S.game = 1;
+        S.series = { wins: { A: 0, B: 0 }, hist: [], flip: false };
         S.res = "";
       }
       S.phase = "lobby"; S.turn = 0; S.deadline = 0; S.startsAt = 0; S.pendingHero = ""; S.pendingTurn = -1; S.resetT = -1; S.pausedAt = 0;
@@ -301,35 +311,47 @@ function handle(S, uid, m, body) {
       if (w2) S.series.wins[id1(w2)]++;
       S.res = w2; changed = true; break;
     case "cand":      /* 手番でない人の候補。同じチームの人にだけ配信される */
-      if (ph !== "draft" || !seated || !D.cur || myTurnIx(S, D, uid) >= 0) break;
+      if (ph !== "draft" || !seated || !D.cur || myAct(S, D, uid)) break;
       var ct = D.seats.home.indexOf(uid) >= 0 ? "home" : "away";
       S.cands = S.cands || {};
       if (m.h === "") { if (S.cands[uid]) { delete S.cands[uid]; changed = true; } break; }
       if (S.cfg.heroes.indexOf(m.h) < 0 || !pickable(S, m.h, ct, D.cur.type)) break;
       S.cands[uid] = m.h; changed = true; break;
     case "pick":
-      var ix = myTurnIx(S, D, uid);
-      if (ix < 0 || S.cfg.heroes.indexOf(m.h) < 0) break;
-      var tp = D.turns[ix];
-      if (!pickable(S, m.h, tp.team, tp.type)) break;
-      if (S.cfg.blind) { S.bp = S.bp || emptyBp(); S.bp[tp.team].h = m.h; }
-      else { S.pendingTurn = S.turn; S.pendingHero = m.h; }
-      changed = true; break;
-    case "confirm":
-      var ix2 = myTurnIx(S, D, uid);
-      if (ix2 < 0) break;
-      var tc = D.turns[ix2];
+      var ac = myAct(S, D, uid);
+      if (!ac || S.cfg.heroes.indexOf(m.h) < 0) break;
       if (S.cfg.blind) {
         S.bp = S.bp || emptyBp();
-        var mb = S.bp[tc.team], ob = S.bp[tc.team === "home" ? "away" : "home"];
-        if (!mb.h || mb.ok) break;
-        if (!pickable(S, mb.h, tc.team, tc.type)) { mb.h = ""; changed = true; break; }
-        if (tc.type === "P" && !S.cfg.mirror && ob.ok && ob.h === mb.h) { mb.h = ""; msg = "同じヒーローを、相手が先に確定していました。別のヒーローを選んでください"; changed = true; break; }
+        var hb = S.bp[ac.team], at = hb.hs.indexOf(m.h);
+        if (at >= 0) { hb.hs.splice(at, 1); changed = true; break; }      /* 選び直し(押すと外れる) */
+        var others = hb.hs.slice();
+        if (ac.n === 1) others = [];
+        if (!pickable(S, m.h, ac.team, ac.type, others)) break;
+        if (ac.n === 1) hb.hs = [m.h]; else if (hb.hs.length < ac.n) hb.hs.push(m.h); else break;
+      } else {
+        if (!pickable(S, m.h, ac.team, ac.type)) break;
+        S.pendingTurn = S.turn; S.pendingHero = m.h;
+      }
+      changed = true; break;
+    case "confirm":
+      var ac2 = myAct(S, D, uid);
+      if (!ac2) break;
+      if (S.cfg.blind) {
+        S.bp = S.bp || emptyBp();
+        var mb = S.bp[ac2.team], ob = S.bp[ac2.team === "home" ? "away" : "home"];
+        if (mb.ok || mb.hs.length !== ac2.n) break;
+        var good = [];
+        mb.hs.forEach(function (h) { if (pickable(S, h, ac2.team, ac2.type, good)) good.push(h); });
+        if (good.length !== mb.hs.length) { mb.hs = good; changed = true; break; }
+        if (ac2.type === "P" && !S.cfg.mirror && ob.ok) {
+          var keep = mb.hs.filter(function (h) { return ob.hs.indexOf(h) < 0; });
+          if (keep.length !== mb.hs.length) { mb.hs = keep; msg = "相手が先に確定したヒーローは選べません。選び直してください"; changed = true; break; }
+        }
         mb.ok = true; mb.auto = false;
         if (S.bp.home.ok && S.bp.away.ok) resolveBlind(S, D);
         changed = true; break;
       }
-      if (S.pendingTurn !== S.turn || !S.pendingHero || !pickable(S, S.pendingHero, tc.team, tc.type)) break;
+      if (S.pendingTurn !== S.turn || !S.pendingHero || !pickable(S, S.pendingHero, ac2.team, ac2.type)) break;
       advance(S, S.pendingHero, false, uid); changed = true; break;
     case "pause":      /* ホストだけ: 制限時間の一時停止 / 再開 */
       if (!isHost || ph !== "draft") break;
@@ -367,13 +389,24 @@ function step(S, seen, selfUid, ev) {
       S.avail = S.cfg.randPool ? sampleAvail(S) : null; S.bp = S.cfg.blind ? emptyBp() : null; S.log = {};
     }
   } else if (S.phase === "draft" && D.cur && !S.pausedAt && now > S.deadline + (extMode(S) === "pool" ? ((S.pool && S.pool[D.cur.team]) || 0) : 0)) {
-    if (S.cfg.blind) {      /* ブラインド: まだ確定していないチームだけ、ピックはランダム、BANは選択なし */
+    if (S.cfg.blind) {      /* ブラインド: まだ確定していないチームは、選んだ分を残して、足りないぶんはピックならランダム・BANはなし */
       S.bp = S.bp || emptyBp();
-      var avoid = [];
+      var avoid = [], nn = stepN(S);
       ["home", "away"].sort(function () { return Math.random() - 0.5; }).forEach(function (t) {
         var b = S.bp[t];
-        if (b.ok) { avoid.push(b.h); return; }
-        b.h = D.cur.type === "P" ? autoHero(S, t, "P", S.cfg.mirror ? [] : avoid) : ""; b.ok = true; b.auto = true; avoid.push(b.h);
+        if (!b.ok) {
+          if (D.cur.type === "P" && !S.cfg.mirror) b.hs = b.hs.filter(function (h) { return avoid.indexOf(h) < 0; });
+          var okset = [];
+          b.hs.forEach(function (h) { if (pickable(S, h, t, D.cur.type, okset)) okset.push(h); });
+          b.hs = okset;
+          while (D.cur.type === "P" && b.hs.length < nn) {
+            var ah = autoHero(S, t, "P", S.cfg.mirror ? [] : avoid, b.hs);
+            if (!ah) break;
+            b.hs.push(ah);
+          }
+          b.ok = true; b.auto = true;
+        }
+        b.hs.forEach(function (h) { avoid.push(h); });
       });
       resolveBlind(S, D);
     } else advance(S, D.cur.type === "P" ? autoHero(S, D.cur.team, "P") : "", true, "");
@@ -392,7 +425,8 @@ function viewFor(S, uid, seen, now) {
   v.cands = c;
   if (S.bp && S.phase === "draft") {      /* ブラインド: 相手の選択は見せない(確定したかどうかだけ) */
     v.bp = {};
-    ["home", "away"].forEach(function (tm) { var b = S.bp[tm]; v.bp[tm] = tm === t ? { h: b.h, ok: b.ok } : { ok: b.ok }; });
+    ["home", "away"].forEach(function (tm) { var b = S.bp[tm]; v.bp[tm] = tm === t ? { hs: b.hs, ok: b.ok } : { ok: b.ok }; });
+    v.se = stepEnd(S.cfg, S.turn);
   }
   if (!t) delete v.code;      /* ランダム数字は着席した参加者にだけ送る(ホスト・観戦者には送らない) */
   v.members = {};
@@ -414,8 +448,8 @@ function validCfg(c) {
   if (!(timer >= 5 && timer <= 120 && timer === Math.floor(timer))) return null;      /* 5秒〜120秒(1秒単位) */
   if (!/^[BP]+$/.test(rows) || rows.length > 20) return null;
   var bans = rows.split("").filter(function (x) { return x === "B"; }).length;
-  if (bans < 1 || bans > 5 || rows.length - bans !== size) return null;
-  if (rows[0] !== "B" || rows[rows.length - 1] !== "P") return null;
+  if (bans > 5 || rows.length - bans !== size) return null;      /* BANは0人(なし)から5人 */
+  if (rows[rows.length - 1] !== "P" || (bans > 0 && rows[0] !== "B")) return null;
   var hs = c.heroes;
   if (!Array.isArray(hs) || hs.length < 10 || hs.length > 150) return null;
   var seen = {};
@@ -433,7 +467,7 @@ function validCfg(c) {
   var fl = c.fearless === true;
   var blind = c.blind === true;
   if (blind) { ext = "none"; pool = 0; }      /* ブラインドは、同時に出すので延長はなし */
-  var series = [0, 3, 5, 7, 99].indexOf(+c.series) >= 0 ? +c.series : 0;
+  var sv = Math.round(+c.series), series = (sv === 99 || (sv >= 3 && sv <= 21 && sv % 2 === 1)) ? sv : 99;      /* シリーズ戦は常に記録する: 99=回数指定なし、奇数=BO○ */
   var hcls = null, cost = null, budget = 0, randPool = 0;
   if (c.rolePick === true) {
     hcls = {};
@@ -450,7 +484,7 @@ function validCfg(c) {
     var minPool = size * 2 + bans * 2 + (hcls ? 4 : 0);
     if (randPool < minPool || randPool > hs.length - fx.length) return null;
   }
-  return { mirror: c.mirror === true, blind: blind, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
+  return { mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
