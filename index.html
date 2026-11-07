@@ -492,8 +492,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
         <div class="row" id="extRow"><span class="lab">タイマー延長</span><div class="seg" id="segExt" role="group" aria-label="タイマー延長"><button type="button" data-v="none">なし</button><button type="button" data-v="pool">時間プール</button><button type="button" data-v="reset">リセット</button><button type="button" data-v="half">半分追加</button></div></div>
         <div class="row" id="poolRow"><label class="lab" for="poolSec">チームの時間プール(秒)</label><input class="field num" id="poolSec" type="number" inputmode="numeric" min="10" max="600" step="5" style="width:110px"></div>
         <p class="hint" id="extHint"></p>
-        <div class="row" style="margin-top:40px"><span class="lab">BAN(各チーム)</span><div class="seg" id="segBan" role="group" aria-label="BANのなし/あり"><button type="button" data-v="0">なし</button><button type="button" data-v="1">あり</button></div></div>
-        <div class="row" id="banNRow"><span class="lab">BANの人数(各チーム)</span><span class="stp"><button type="button" class="btn sm" id="banMinus" aria-label="BANを1人減らす">−</button><b class="num" id="banN">2</b><span>人</span><button type="button" class="btn sm" id="banPlus" aria-label="BANを1人増やす">+</button></span></div>
+                <div class="row" id="banNRow" style="margin-top:40px"><span class="lab">BANの人数(各チーム)・0人でBANなし</span><span class="stp"><button type="button" class="btn sm" id="banMinus" aria-label="BANを1人減らす(0人でBANなし)">−</button><b class="num" id="banN">2</b><span>人</span><button type="button" class="btn sm" id="banPlus" aria-label="BANを1人増やす">+</button></span></div>
         <div class="lab" style="margin-bottom:6px">手番</div>
         <div class="rlist" id="cStrip"></div>
         <p class="hint" id="stripHint"></p>
@@ -574,7 +573,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261108-1L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261108-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -988,7 +987,7 @@ function extendTime(){if(isActor()&&S.resetT!==S.turn&&(S.pausedAt||nowS())<S.de
 /* ---------- 作成フォーム ---------- */
 function genId(){var a="ABCDEFGHJKMNPQRSTUVWXYZ23456789",s="";for(var i=0;i<6;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
 function setBans(){cs.bans=cs.banOn?cs.banN:0}
-function banMax(){return Math.max(1,Math.floor((HEROES.length-cs.fixed.length-cs.size*2)/2))}      /* 固定BAN+形式+BANが、全ヒーローに収まる上限 */
+function banMax(){return Math.max(0,Math.floor((HEROES.length-cs.fixed.length-cs.size*2)/2))}      /* 固定BAN+形式+BANが、全ヒーローに収まる上限 */
 function setRows(){setBans();cs.rows=(cs.blind&&cs.blindAll?(new Array(cs.bans+1).join("B")+new Array(cs.size+1).join("P")):defaultRows(cs.size,cs.bans)).split("");cs.first=defaultFirst(cs.rows).split("")}
 function renderCreateBtn(){
   var cnt=cs.rows.filter(function(x){return x==="B"}).length;
@@ -1003,8 +1002,7 @@ function renderCreate(){
   $("#tmRow").hidden=!cs.custom;
   if(cs.custom&&document.activeElement!==$("#tmSec"))$("#tmSec").value=cs.timer;
   var bm=banMax();if(cs.banN>bm){cs.banN=bm;setRows()}
-  $$("#segBan button").forEach(function(b){b.classList.toggle("on",(+b.dataset.v===1)===cs.banOn)});
-  $("#banNRow").hidden=!cs.banOn;$("#banN").textContent=cs.banN;$("#banMinus").disabled=cs.banN<=1;$("#banPlus").disabled=cs.banN>=bm;
+  $("#banNRow").hidden=!cs.banOn;$("#banN").textContent=cs.banN;$("#banMinus").disabled=cs.banN<=0;$("#banPlus").disabled=cs.banN>=bm;
   $$("#segExt button").forEach(function(b){b.classList.toggle("on",b.dataset.v===cs.ext)});
   if(cs.blind&&cs.ext!=="none")cs.ext="none";
   $("#extRow").hidden=cs.blind;$("#extHint").hidden=cs.blind;
@@ -1099,8 +1097,7 @@ function wireCreate(){
   $("#gateOut").addEventListener("click",function(){hostOK=false;hostAuth=null;lsDel("vgd_ha");refreshEntry()});
   $("#tmSec").addEventListener("input",function(){var v=+this.value;if(v>=5&&v<=120&&v===Math.round(v)){cs.timer=v;renderCreate()}});
   $("#tmSec").addEventListener("change",function(){cs.timer=normTm(this.value);this.value=cs.timer;renderCreate()});
-  $("#segBan").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.banOn=+b.dataset.v===1;setRows();renderCreate()});
-  $("#banMinus").addEventListener("click",function(){if(cs.banN>1){cs.banN--;setRows();renderCreate()}});
+  $("#banMinus").addEventListener("click",function(){if(cs.banN>0){cs.banN--;setRows();renderCreate()}});
   $("#banPlus").addEventListener("click",function(){if(cs.banN<banMax()){cs.banN++;setRows();renderCreate()}});
   $("#cStrip").addEventListener("click",function(e){
     var b=e.target.closest("button");if(!b||b.disabled)return;
