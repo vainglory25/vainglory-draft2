@@ -135,6 +135,7 @@ details.fx[open] summary{margin-bottom:10px}
 .tile.used .mono{filter:grayscale(1) brightness(.5)}
 .tile .ub{position:absolute;top:2px;left:2px;z-index:3;font-style:normal;font-size:9px;line-height:1;padding:2px 4px;border-radius:4px;background:#000a;color:var(--muted);pointer-events:none}
 #lobbyNote{margin:0 0 10px}
+.more{margin:0 0 14px}.more>summary{cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-weight:700;list-style:none}.more>summary::-webkit-details-marker{display:none}.more>summary::before{content:"▸ "}.more[open]>summary::before{content:"▾ "}.more[open]>summary{margin-bottom:12px}
 .optbox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 14px;background:var(--panel2,transparent)}
 .optt{display:block;cursor:pointer;font-size:13px;line-height:1.6}
 .optt input{vertical-align:middle;margin:0 8px 0 0}
@@ -437,6 +438,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <label class="optt"><input type="checkbox" id="leaderChk"><b>代表者モード</b>(各チームの代表者1人だけが操作する)</label>
           <p class="hint" id="leaderHint">オフ:チーム全員が順番に操作します / オン:各チームの代表者だけがBAN・ピックします(代表者は入室時に選びます)。部屋を作ったあとは変更できません。</p>
         </div>
+        <details class="more" id="moreOpts"><summary>その他機能(フィアレス・ミラー・ブラインド・予算制・シリーズ戦など)</summary>
         <div class="optbox">
           <label class="optt"><input type="checkbox" id="fearlessChk"><b>フィアレス</b>(一度ピックしたヒーローは次の試合で使えない)</label>
           <label class="optt sub" id="fbanRow" hidden><input type="checkbox" id="fbanChk">BANしたヒーローも次の試合で使えない</label>
@@ -482,9 +484,10 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <label class="optt"><input type="checkbox" id="swapChk"><b>次の試合でホームとアウェイを入れ替える</b></label>
           <p class="hint">ホストが「次の試合へ」を押すと、ホームとアウェイの参加者が入れ替わってロビーに戻ります(試合ごとに交互になります)。オフのときは、そのままのチーム分けで戻ります。</p>
         </div>
+        </details>
         <div class="row"><span class="lab">1手番の制限時間</span><div class="seg" id="segTimer" role="group" aria-label="制限時間"><button type="button" data-v="15">15秒</button><button type="button" data-v="30">30秒</button><button type="button" data-v="45">45秒</button><button type="button" data-v="60">60秒</button><button type="button" data-v="c">指定</button></div></div>
         <div class="row" id="tmRow"><label class="lab" for="tmSec" style="margin:0">指定する秒数(5秒〜120秒)</label><span><input class="field num" id="tmSec" type="number" inputmode="numeric" min="5" max="120" step="1" value="20" style="width:90px"> 秒</span></div>
-        <div class="row" id="extRow"><span class="lab">タイマー延長</span><div class="seg" id="segExt" role="group" aria-label="タイマー延長"><button type="button" data-v="pool">時間プール</button><button type="button" data-v="reset">リセット</button><button type="button" data-v="half">半分追加</button><button type="button" data-v="none">なし</button></div></div>
+        <div class="row" id="extRow"><span class="lab">タイマー延長</span><div class="seg" id="segExt" role="group" aria-label="タイマー延長"><button type="button" data-v="none">なし</button><button type="button" data-v="pool">時間プール</button><button type="button" data-v="reset">リセット</button><button type="button" data-v="half">半分追加</button></div></div>
         <div class="row" id="poolRow"><label class="lab" for="poolSec">チームの時間プール(秒)</label><input class="field num" id="poolSec" type="number" inputmode="numeric" min="10" max="600" step="5" style="width:110px"></div>
         <p class="hint" id="extHint"></p>
         <div class="row" style="margin-top:40px"><span class="lab">BANの人数(各チーム)</span><div class="seg" id="segBans" role="group" aria-label="BANの人数"><button type="button" data-v="0">なし</button><button type="button" data-v="1">1人</button><button type="button" data-v="2">2人</button><button type="button" data-v="3">3人</button><button type="button" data-v="4">4人</button><button type="button" data-v="5">5人</button></div></div>
@@ -568,7 +571,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261107-4L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261107-5L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -670,7 +673,7 @@ HEROES.forEach(function(h){COST0[h]=2});
 ["チャーンウォーカー", "ヴィオラ", "トニー"].forEach(function(h){COST0[h]=4});
 ["オゾ", "ソー", "ヴァーリア"].forEach(function(h){COST0[h]=1});
 var HCLS={};ROLES.forEach(function(g){g.list.forEach(function(h){HCLS[h]=g.k==="captain"?"C":g.k==="jungler"?"J":"L"})});
-var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:Object.assign({},COST0),series:99,serChk:false,serUse:false,serN:3,swap:false,blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
+var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:Object.assign({},COST0),series:99,serChk:false,serUse:false,serN:3,swap:true,blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
 function toast(t){var el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
