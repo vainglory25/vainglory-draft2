@@ -52,11 +52,18 @@ function seenMap(arr) {      /* HGETALL の [k,v,k,v…] → {k:v} */
 }
 
 /* ---------- ドラフトのモデル(画面側 index.html と同じ規則) ---------- */
+/* 行ごとの先攻(H=ホームが先 / A=アウェイが先)の初期値: BANとPICKを別々に数えて、1行目・3行目…はホーム先、2行目・4行目…はアウェイ先(ジグザグ) */
+function defaultFirst(rows) {
+  var p = 0, b = 0, out = "";
+  for (var r = 0; r < rows.length; r++) { var k = rows[r] === "P" ? p++ : b++; out += k % 2 === 0 ? "H" : "A"; }
+  return out;
+}
 function buildTurns(cfg) {
   var N = cfg.size, turns = [], p = 0, b = 0;
   for (var r = 0; r < cfg.rows.length; r++) {
     var type = cfg.rows[r], k = type === "P" ? p++ : b++;
-    var slot = type === "P" ? k : (k % N), order = k % 2 === 0 ? ["home", "away"] : ["away", "home"];
+    var fh = cfg.first && cfg.first[r] ? cfg.first[r] === "H" : k % 2 === 0;
+    var slot = type === "P" ? k : (k % N), order = fh ? ["home", "away"] : ["away", "home"];
     turns.push({ r: r, team: order[0], type: type, slot: slot });
     turns.push({ r: r, team: order[1], type: type, slot: slot });
   }
@@ -453,9 +460,9 @@ function validCfg(c) {
   var size = +c.size, timer = +c.timer, rows = String(c.rows || "");
   if (size !== 3 && size !== 5) return null;
   if (!(timer >= 5 && timer <= 120 && timer === Math.floor(timer))) return null;      /* 5秒〜120秒(1秒単位) */
-  if (!/^[BP]+$/.test(rows) || rows.length > 20) return null;
+  if (!/^[BP]+$/.test(rows) || rows.length > 60) return null;
   var bans = rows.split("").filter(function (x) { return x === "B"; }).length;
-  if (bans > 5 || rows.length - bans !== size) return null;      /* BANは0人(なし)から5人 */
+  if (rows.length - bans !== size) return null;      /* BANの人数の上限は、ヒーロー数に収まるかどうか(下で確認) */
   if (rows[rows.length - 1] !== "P" || (bans > 0 && rows[0] !== "B")) return null;
   var hs = c.heroes;
   if (!Array.isArray(hs) || hs.length < 10 || hs.length > 150) return null;
@@ -491,7 +498,8 @@ function validCfg(c) {
     var minPool = size * 2 + bans * 2 + (hcls ? 4 : 0);
     if (randPool < minPool || randPool > hs.length - fx.length) return null;
   }
-  return { mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
+  var first = typeof c.first === "string" && c.first.length === rows.length && /^[HA]+$/.test(c.first) ? c.first : defaultFirst(rows);
+  return { first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
