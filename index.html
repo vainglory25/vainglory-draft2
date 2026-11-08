@@ -127,8 +127,8 @@ details.fx[open] summary{margin-bottom:10px}
 .tile .cst.big{font-size:13px;padding:3px 7px}
 .tile .ob{position:absolute;bottom:2px;left:2px;z-index:3;font-style:normal;font-size:9px;line-height:1;padding:2px 4px;border-radius:4px;background:#000b;color:var(--muted);pointer-events:none}
 .tnbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}.tnbox input{width:100%;min-width:0;box-sizing:border-box}.tnbox label{min-width:0;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute,#9aa3c7)}.tsub{opacity:.6;font-size:.7em;font-weight:600;margin-left:2px}
-.sec .lab{font-weight:700}.sec .row:last-child,.sec>.hint:last-child{margin-bottom:0}.sec .hint{margin-bottom:0}
-.sumbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:92px;overflow-y:auto;margin:0 0 14px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 14px rgba(0,0,0,.35);scrollbar-width:thin}
+.sec .lab{font-weight:800;font-size:14px;color:var(--fg)}.sec .row:last-child,.sec>.hint:last-child{margin-bottom:0}.sec .hint{margin-bottom:0}
+.sumbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:34vh;overflow-y:auto;margin:0 0 14px;padding:10px 10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 14px rgba(0,0,0,.35);scrollbar-width:thin}
 .sumbar::before{content:"現在の設定";flex:none;font-size:11px;color:var(--muted);letter-spacing:.08em;margin-right:2px}
 .schip{display:inline-flex;align-items:center;flex:none;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:12px;white-space:nowrap}
 .sumbar .mchip{flex:none}
@@ -586,7 +586,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261108-8L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261108-9L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
