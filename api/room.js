@@ -327,6 +327,18 @@ function handle(S, uid, m, body) {
     case "kick":
       if (!isHost || ph !== "lobby" || typeof m.u !== "string" || !mem[m.u] || m.u === uid) break;
       mem[m.u].team = ""; mem[m.u].ready = false; mem[m.u].leader = false; mem[m.u].locked = false; changed = true; break;
+    case "move": {      /* 席順の入れ替え(ロビーのみ): ホスト、または代表者モードでの、そのチームの代表者 */
+      if (ph !== "lobby" || typeof m.u !== "string" || !mem[m.u] || !mem[m.u].team || (m.d !== -1 && m.d !== 1)) break;
+      var mvT = mem[m.u].team;
+      if (!(isHost || (LD && me.leader && me.team === mvT))) break;
+      var mvOrd = rankOf(S, mvT), mvI = mvOrd.indexOf(m.u), mvJ = mvI + m.d;
+      if (mvI < 0 || mvJ < 0 || mvJ >= mvOrd.length) break;
+      if (LD && (mem[mvOrd[mvI]].leader || mem[mvOrd[mvJ]].leader)) break;      /* 代表者の席は固定 */
+      var mvTs = mvOrd.map(function (u) { return mem[u].t; }).sort(function (a, b) { return a - b; }), mvPrev = -Infinity;
+      mvOrd.splice(mvI, 1); mvOrd.splice(mvJ, 0, m.u);
+      mvOrd.forEach(function (u, i) { var v = Math.max(mvTs[i], mvPrev + 0.001); mem[u].t = v; mvPrev = v; });
+      changed = true; break;
+    }
     case "tname":      /* チーム名: ホストがロビーで入力する。全員に表示される */
       if (!isHost || ph !== "lobby" || (m.t !== "home" && m.t !== "away") || typeof m.n !== "string") break;
       S.tn = S.tn || { home: "", away: "" };
