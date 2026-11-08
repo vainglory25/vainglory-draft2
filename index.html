@@ -502,7 +502,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
         <p class="hint" id="extHint"></p>
         </div>
                 <div class="optbox sec">
-        <div class="row" id="banNRow"><span class="lab">BANの人数(各チーム)</span><span class="stp"><button type="button" class="btn sm" id="banMinus" aria-label="BANを1人減らす">−</button><b class="num" id="banN">2</b><span>人</span><button type="button" class="btn sm" id="banPlus" aria-label="BANを1人増やす">+</button></span></div>
+        <div class="row" id="banNRow"><span class="lab">BANの数(各チーム)</span><span class="stp"><button type="button" class="btn sm" id="banMinus" aria-label="BANを1体減らす">−</button><b class="num" id="banN">2</b><span>体</span><button type="button" class="btn sm" id="banPlus" aria-label="BANを1体増やす">+</button></span></div>
         <div class="lab" style="margin-bottom:6px">進行順</div>
         <div class="rlist" id="cStrip"></div>
         <p class="hint" id="stripHint"></p>
@@ -586,7 +586,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261108-10L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261108-11L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1035,7 +1035,7 @@ function renderCreateBtn(){
   var cnt=cs.rows.filter(function(x){return x==="B"}).length;
   var short=HEROES.length-cs.fixed.length<cs.size*2+cs.bans*2;
   $("#createBtn").disabled=!(cnt===cs.bans&&!short&&!joining);
-  if(short)$("#createMsg").textContent="ヒーローが足りません(固定BAN+ピック+BANが、全"+HEROES.length+"体を超えています)。BANの人数か固定BANを減らしてください。";
+  if(short)$("#createMsg").textContent="ヒーローが足りません(固定BAN+ピック+BANが、全"+HEROES.length+"体を超えています)。BANの数か固定BANを減らしてください。";
   else if($("#createMsg").textContent.indexOf("ヒーローが足りません")===0)$("#createMsg").textContent="";
 }
 function renderCreate(){
@@ -1050,7 +1050,7 @@ function renderCreate(){
   $("#extRow").hidden=cs.blind;$("#extHint").hidden=cs.blind;
   $("#poolRow").hidden=cs.ext!=="pool"||cs.blind;
   $("#mirrorChk").checked=cs.mirror;$("#blindChk").checked=cs.blind;$("#roleChk").checked=cs.role;
-  $("#roleHint").textContent="各チームのピックは、キャプテン1人・ジャングラー1人・レーナー"+(cs.size-2)+"人になります。オフのときは、役割に関係なく選べます。";
+  $("#roleHint").textContent="各チームのピックは、キャプテン1体・ジャングラー1体・レーナー"+(cs.size-2)+"体になります。オフのときは、役割に関係なく選べます。";
   var minRp=cs.size*2+cs.bans*2+(cs.role?4:0),avail=HEROES.length-cs.fixed.length;
   $("#rpChk").checked=cs.rp>0;$("#rpRow").hidden=!(cs.rp>0);
   $$("#segRp button").forEach(function(b){var v=+b.dataset.v,bad=v<minRp||v>avail;b.disabled=bad;b.style.opacity=bad?".4":"";b.classList.toggle("on",cs.rp===v)});
@@ -1068,7 +1068,7 @@ function renderCreate(){
   $("#swapChk").checked=cs.swap;
   $("#blindRow").hidden=!cs.blind;
   $$("#segBlind button").forEach(function(b){b.classList.toggle("on",(+b.dataset.v===1)===cs.blindAll)});
-  $("#blindHint").textContent=(cs.blindAll?"BANは全員分まとめて、PICKも全員分まとめて、同時に選んで確定します。チームの誰でも選べて(代表者モードなら代表者だけ)、人数ぶん揃えて確定すると、一斉に公開されます。進行順は、BANが先、PICKが後になります。":"各行で、両チームが同時に選んで確定すると、一斉に公開されます。")+" 時間切れは、ピックは足りないぶんがランダム、BANは選んだ分だけです。「ミラーあり」でないときは、同じヒーローをピックすると、先に確定した方が優先され、後の人は選び直しになります。BANなしにするには、下の「BANの人数」を「なし」にしてください。タイマー延長は「なし」になります。";
+  $("#blindHint").textContent=(cs.blindAll?"BANもPICKも、チーム全体の分をまとめて同時に選んで確定します。チームの誰でも選べて(代表者モードなら代表者だけ)、必要な数ぶん揃えて確定すると、一斉に公開されます。進行順は、BANが先、PICKが後になります。":"各行で、両チームが同時に選んで確定すると、一斉に公開されます。")+" 時間切れは、ピックは足りないぶんがランダム、BANは選んだ分だけです。「ミラーあり」でないときは、同じヒーローをピックすると、先に確定した方が優先され、後の人は選び直しになります。BANなしにするには、下の「BANの数(各チーム)」を0体にしてください。タイマー延長は「なし」になります。";
   if(document.activeElement!==$("#poolSec"))$("#poolSec").value=cs.pool;
   var half=Math.round(cs.timer/2);
   $("#extHint").textContent=cs.ext==="none"?"延長はありません。制限時間("+cs.timer+"秒)を過ぎると、ピックはランダム、BANは選択なしで、すぐ次の手番へ進みます。":cs.ext==="pool"?"制限時間を過ぎた分だけ、そのチームの時間プールから減っていきます(使った分は戻りません)。プールが0になると、ピックはランダム、BANは選択なしで次の手番へ進みます。延長ボタンはありません。":cs.ext==="reset"?"手番ごとに1回、残り時間を制限時間("+cs.timer+"秒)いっぱいに戻せます。時間切れは、ピックはランダム、BANは選択なしで次へ進みます。":"手番ごとに1回、残り時間に制限時間の約半分(+"+half+"秒)を追加できます。時間切れは、ピックはランダム、BANは選択なしで次へ進みます。";
@@ -1082,16 +1082,16 @@ function renderCreate(){
     sh+=cell(nh,"home")+'<button type="button" class="rflip" data-flip="'+i+'" title="この行の先攻を入れ替える"'+(bl2?" disabled":"")+'>⇄</button>'+cell(na,"away");
   });
   $("#cStrip").className="tgrid";$("#cStrip").innerHTML=sh;
-  $("#stripHint").textContent=(cs.blind&&cs.blindAll?"各チーム"+target+"人BAN、"+cs.size+"人ピックです。ブラインド(まとめて)なので、BAN→PICKの順に、それぞれ同時に出します。":(cs.bans===0?"BANなしです。":"各チーム"+target+"人BANです。")+cs.size+"人ピックで全"+cs.rows.length+"行です。左がHOME、右がAWAYで、数字が進む順番です。"+(cs.bans>0?"1行目はBAN固定です。BANにしたい行をタップすると、いちばん近いBANがその行に移動します。":"")+" 真ん中の ⇄ で、その行をどちらが先に行うかを入れ替えられます。")+(cs.blind&&!cs.blindAll?" (ブラインドの1行ずつでは、行の中は同時なので、数字は行の番号です)":"");
-  $("#fixedCount").textContent=cs.fixed.length?"("+cs.fixed.length+"人)":"";
+  $("#stripHint").textContent=(cs.blind&&cs.blindAll?"各チーム"+target+"体BAN、"+cs.size+"体ピックです。ブラインド(まとめて)なので、BAN→PICKの順に、それぞれ同時に出します。":(cs.bans===0?"BANなしです。":"各チーム"+target+"体BANです。")+cs.size+"体ピックで全"+cs.rows.length+"行です。左がHOME、右がAWAYで、数字が進む順番です。"+(cs.bans>0?"1行目はBAN固定です。BANにしたい行をタップすると、いちばん近いBANがその行に移動します。":"")+" 真ん中の ⇄ で、その行をどちらが先に行うかを入れ替えられます。")+(cs.blind&&!cs.blindAll?" (ブラインドの1行ずつでは、行の中は同時なので、数字は行の番号です)":"");
+  $("#fixedCount").textContent=cs.fixed.length?"("+cs.fixed.length+"体)":"";
   $("#fixedList").innerHTML=cs.fixed.map(function(h){return '<span class="fchip">'+monoHTML(h)+esc(h)+'</span>'}).join("");
   renderFixedPool();
-  $("#cSum").textContent=cs.size+"v"+cs.size+" / 各手番 "+cs.timer+"秒("+(cs.ext==="pool"?"チーム時間プール "+cs.pool+"秒":cs.ext==="reset"?"リセット":cs.ext==="none"?"延長なし":"半分追加")+") / "+(cs.bans?"BAN 各チーム"+cs.bans+"人(計"+cs.bans*2+"人)":"BANなし")+" + 固定BAN "+cs.fixed.length+"人 / 全 "+cs.rows.length+" 行"+(cs.leader?" / 代表者モード":"")+(cs.fearless?" / フィアレス"+(cs.fbans?"(BAN含む)":""):"")+(cs.mirror?" / ミラーあり":"")+(cs.blind?" / ブラインド"+(cs.blindAll?"(まとめて)":"(1行ずつ)"):"")+(cs.role?" / ロール別":"")+(cs.rp>0?" / ランダムプール"+cs.rp+"体":"")+(cs.bud?" / 予算制"+cs.budPts+"点":"")+(cs.serChk?" / シリーズ("+(cs.serUse?"BO"+cs.serN:"回数指定なし")+")":"")+(cs.swap?" / 次の試合で入れ替え":"");
+  $("#cSum").textContent=cs.size+"v"+cs.size+" / 各手番 "+cs.timer+"秒("+(cs.ext==="pool"?"チーム時間プール "+cs.pool+"秒":cs.ext==="reset"?"リセット":cs.ext==="none"?"延長なし":"半分追加")+") / "+(cs.bans?"BAN 各チーム"+cs.bans+"体(計"+cs.bans*2+"体)":"BANなし")+" + 固定BAN "+cs.fixed.length+"体 / 全 "+cs.rows.length+" 行"+(cs.leader?" / 代表者モード":"")+(cs.fearless?" / フィアレス"+(cs.fbans?"(BAN含む)":""):"")+(cs.mirror?" / ミラーあり":"")+(cs.blind?" / ブラインド"+(cs.blindAll?"(まとめて)":"(1行ずつ)"):"")+(cs.role?" / ロール別":"")+(cs.rp>0?" / ランダムプール"+cs.rp+"体":"")+(cs.bud?" / 予算制"+cs.budPts+"点":"")+(cs.serChk?" / シリーズ("+(cs.serUse?"BO"+cs.serN:"回数指定なし")+")":"")+(cs.swap?" / 次の試合で入れ替え":"");
   renderSumBar();
   renderCreateBtn();
 }
 function renderSumBar(){      /* 部屋作成画面の上部に固定で、今の設定を表示する */
-  var base=[cs.size+"v"+cs.size,"各手番 "+cs.timer+"秒",cs.blind?"延長なし":(cs.ext==="pool"?"時間プール "+cs.pool+"秒":cs.ext==="reset"?"延長:リセット":cs.ext==="none"?"延長なし":"延長:半分追加"),cs.bans?"BAN 各チーム"+cs.bans+"人":"BANなし","固定BAN "+cs.fixed.length+"体","全"+cs.rows.length+"行"];
+  var base=[cs.size+"v"+cs.size,"各手番 "+cs.timer+"秒",cs.blind?"延長なし":(cs.ext==="pool"?"時間プール "+cs.pool+"秒":cs.ext==="reset"?"延長:リセット":cs.ext==="none"?"延長なし":"延長:半分追加"),cs.bans?"BAN 各チーム"+cs.bans+"体":"BANなし","固定BAN "+cs.fixed.length+"体","全"+cs.rows.length+"行"];
   var modes=[];
   if(cs.leader)modes.push("代表者モード");
   if(cs.fearless)modes.push("フィアレス"+(cs.fbans?"(BAN含む)":""));
@@ -1167,7 +1167,7 @@ function wireCreate(){
     for(var j=1;j<cs.rows.length;j++){
       if(cs.rows[j]==="B"&&(best<0||Math.abs(j-i)<Math.abs(best-i)))best=j;
     }
-    if(best<0){$("#createMsg").textContent="BANが1人のときは1行目のみがBANです。";return}
+    if(best<0){$("#createMsg").textContent="BANが1体のときは1行目のみがBANです。";return}
     cs.rows[best]="P";cs.rows[i]="B";cs.first=defaultFirst(cs.rows).split("");
     $("#createMsg").textContent="";renderCreate();
   });
@@ -1243,7 +1243,7 @@ function renderMeta(){
   var role=D.myTeam?'<span class="badge '+D.myTeam+'">'+teamJa(D.myTeam)+'で参加中</span>':(me&&me.spec?'<span class="badge spec">観戦</span>':'<span class="badge spec">未着席</span>');
   var bans=cfg.rows.split("").filter(function(x){return x==="B"}).length;
   var phase={lobby:"ロビー",countdown:"開始カウントダウン",draft:"ドラフト中",done:"ドラフト完了"}[S.phase];
-  $("#roomMeta").innerHTML=role+(isHost?'<span class="badge gold">ホスト</span>':'')+'<span class="badge gold">'+esc(phase)+'</span><span class="num">'+cfg.size+'v'+cfg.size+' / '+cfg.timer+'秒 / BAN 各チーム'+bans+'人 / '+cfg.rows.length+'行</span><span>観戦 '+spec+'人</span>';
+  $("#roomMeta").innerHTML=role+(isHost?'<span class="badge gold">ホスト</span>':'')+'<span class="badge gold">'+esc(phase)+'</span><span class="num">'+cfg.size+'v'+cfg.size+' / '+cfg.timer+'秒 / BAN 各チーム'+bans+'体 / '+cfg.rows.length+'行</span><span>観戦 '+spec+'人</span>';
 }
 function serLabel(){      /* シリーズ戦の勝ち数。ホーム/アウェイは、入れ替えを反映した今の側 */
   var si=serInfo();if(!si)return "";
@@ -1399,7 +1399,7 @@ function renderTurn(){
   }
   var c=D.cur,mine=isActor(),verb=c.type==="B"?"BAN":"PICK",used=S.resetT===S.turn,bl=S.cfg.blind;
   tb.className="turnbar "+(bl?"":c.team)+(mine?" mine":"");
-  var sn=stepN(),head=bl?'手番 '+(S.turn+1)+'-'+(S.se||S.turn+2)+' / '+D.turns.length+' · 同時 '+verb+(sn>1?'(各'+sn+'人まとめて)':''):'手番 '+(S.turn+1)+' / '+D.turns.length+' · '+verb;
+  var sn=stepN(),head=bl?'手番 '+(S.turn+1)+'-'+(S.se||S.turn+2)+' / '+D.turns.length+' · 同時 '+verb+(sn>1?'(各'+sn+'体まとめて)':''):'手番 '+(S.turn+1)+' / '+D.turns.length+' · '+verb;
   var who=bl?(mine?'<em>あなたの番です</em>':(blindWaiting()?'確定しました。相手を待っています':'両チーム同時に'+verb+'を選んでいます')):(mine?'<em>あなたの番です</em>':esc(teamJa(c.team))+' '+esc(nameOf(D.actor))+' の'+verb);
   tb.innerHTML='<div class="tb-l"><div class="k num">'+head+'</div>'+
     '<div class="v">'+who+'</div>'+
