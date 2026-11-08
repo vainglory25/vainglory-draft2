@@ -190,6 +190,7 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 .rd i{width:12px;height:12px;border-radius:50%;background:var(--line);display:inline-block}
 .rd.on{color:var(--ok)}
 .rd.on i{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.mv{display:inline-flex;gap:2px}.mvb{border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:6px;width:26px;height:26px;padding:0;font-size:11px;line-height:1}.mvb:disabled{opacity:.25}.lay-new .mvb{transform:rotate(-90deg)}
 .kick{border:0;background:transparent;color:var(--muted);padding:0 4px;font-size:16px;line-height:1}
 .kick:hover{color:var(--away)}
 .team .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -493,7 +494,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
         <div class="row" id="poolRow"><label class="lab" for="poolSec">チームの時間プール(秒)</label><input class="field num" id="poolSec" type="number" inputmode="numeric" min="10" max="600" step="5" style="width:110px"></div>
         <p class="hint" id="extHint"></p>
                 <div class="row" id="banNRow" style="margin-top:40px"><span class="lab">BANの人数(各チーム)</span><span class="stp"><button type="button" class="btn sm" id="banMinus" aria-label="BANを1人減らす">−</button><b class="num" id="banN">2</b><span>人</span><button type="button" class="btn sm" id="banPlus" aria-label="BANを1人増やす">+</button></span></div>
-        <div class="lab" style="margin-bottom:6px">手番</div>
+        <div class="lab" style="margin-bottom:6px">進行順</div>
         <div class="rlist" id="cStrip"></div>
         <p class="hint" id="stripHint"></p>
         <div class="lab" style="margin-top:14px">固定BAN(最初からBANするヒーロー) <span id="fixedCount"></span></div>
@@ -573,7 +574,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261108-4L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261108-6L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1069,7 +1070,7 @@ function renderCreate(){
     sh+=cell(nh,"home")+'<button type="button" class="rflip" data-flip="'+i+'" title="この行の先攻を入れ替える"'+(bl2?" disabled":"")+'>⇄</button>'+cell(na,"away");
   });
   $("#cStrip").className="tgrid";$("#cStrip").innerHTML=sh;
-  $("#stripHint").textContent=(cs.blind&&cs.blindAll?"各チーム"+target+"人BAN、"+cs.size+"人ピックです。ブラインド(まとめて)なので、BAN→PICKの順に、それぞれ同時に出します。":(cs.bans===0?"BANなしです。":"各チーム"+target+"人BANです。")+cs.size+"人ピックで全"+cs.rows.length+"行です。左がHOME、右がAWAYで、数字が進む順番(手番)です。"+(cs.bans>0?"1行目はBAN固定です。BANにしたい行をタップすると、いちばん近いBANがその行に移動します。":"")+" 真ん中の ⇄ で、その行をどちらが先に行うかを入れ替えられます。")+(cs.blind&&!cs.blindAll?" (ブラインドの1行ずつでは、行の中は同時なので、数字は行の番号です)":"");
+  $("#stripHint").textContent=(cs.blind&&cs.blindAll?"各チーム"+target+"人BAN、"+cs.size+"人ピックです。ブラインド(まとめて)なので、BAN→PICKの順に、それぞれ同時に出します。":(cs.bans===0?"BANなしです。":"各チーム"+target+"人BANです。")+cs.size+"人ピックで全"+cs.rows.length+"行です。左がHOME、右がAWAYで、数字が進む順番です。"+(cs.bans>0?"1行目はBAN固定です。BANにしたい行をタップすると、いちばん近いBANがその行に移動します。":"")+" 真ん中の ⇄ で、その行をどちらが先に行うかを入れ替えられます。")+(cs.blind&&!cs.blindAll?" (ブラインドの1行ずつでは、行の中は同時なので、数字は行の番号です)":"");
   $("#fixedCount").textContent=cs.fixed.length?"("+cs.fixed.length+"人)":"";
   $("#fixedList").innerHTML=cs.fixed.map(function(h){return '<span class="fchip">'+monoHTML(h)+esc(h)+'</span>'}).join("");
   renderFixedPool();
@@ -1268,14 +1269,20 @@ function renderLobby(){
   var canSit=S.phase==="lobby"&&!me.spec;
   var html="";
   ["home","away"].forEach(function(t){
+    var canMove=S.phase==="lobby"&&(isHost||(S.cfg.leader&&me.leader&&me.team===t));      /* 席順を入れ替えられるのは、ホストと、そのチームの代表者 */
     var seats=D.seats[t],rc=seats.filter(function(u){return mem[u]&&mem[u].ready}).length;
     var rows="";
     for(var i=0;i<N;i++){
       var u=seats[i];
       if(!u){rows+='<div class="seat empty"><span class="sn num">'+(i+1)+'</span><span class="who">空席</span><span></span></div>';continue}
       var m=mem[u]||{},mine=u===myUid;
+      var mv="";
+      if(canMove&&!(S.cfg.leader&&m.leader)){
+        var up=i>0&&!(S.cfg.leader&&mem[seats[i-1]]&&mem[seats[i-1]].leader),dn=i<seats.length-1;
+        mv='<span class="mv">'+'<button class="mvb" type="button" data-mv="-1" data-u="'+esc(u)+'" aria-label="順番を前へ"'+(up?"":" disabled")+'>▲</button><button class="mvb" type="button" data-mv="1" data-u="'+esc(u)+'" aria-label="順番を後ろへ"'+(dn?"":" disabled")+'>▼</button></span>';
+      }
       rows+='<div class="seat'+(mine?" me":"")+'"><span class="sn num">'+(i+1)+'</span><span class="who">'+esc(m.name||"")+(S.cfg.leader&&m.leader?'<small>代表</small>':'')+(mine?'<small>あなた</small>':'')+(u===S.host?'<small>ホスト</small>':'')+(m.on===false?'<small>切断中</small>':'')+'</span>'+
-        '<span style="display:flex;align-items:center;gap:6px">'+rtag(m)+((S.cfg.leader&&!m.leader)?'':'<span class="rd'+(m.ready?" on":"")+'" role="img" title="'+(m.ready?"準備完了":"未準備")+'" aria-label="'+(m.ready?"準備完了":"未準備")+'"><i></i></span>')+
+        '<span style="display:flex;align-items:center;gap:6px">'+mv+rtag(m)+((S.cfg.leader&&!m.leader)?'':'<span class="rd'+(m.ready?" on":"")+'" role="img" title="'+(m.ready?"準備完了":"未準備")+'" aria-label="'+(m.ready?"準備完了":"未準備")+'"><i></i></span>')+
         (isHost&&!mine&&S.phase==="lobby"?'<button class="kick" type="button" data-kick="'+esc(u)+'" aria-label="席から外す">×</button>':'')+'</span></div>';
     }
     var acts="";
@@ -1467,6 +1474,7 @@ function wireRoom(){
     if(b.dataset.sit)act({a:"sit",team:b.dataset.sit,leader:!!b.dataset.lead});
     else if(b.dataset.stand)act({a:"stand"});
     else if(b.dataset.kick)act({a:"kick",u:b.dataset.kick});
+    else if(b.dataset.mv)act({a:"move",u:b.dataset.u,d:+b.dataset.mv});
   });
   $("#readybar").addEventListener("click",function(e){if(e.target.closest("[data-ready]"))act({a:"ready"})});
   $("#rolebar").addEventListener("click",function(e){
