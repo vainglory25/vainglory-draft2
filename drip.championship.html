@@ -139,6 +139,13 @@ details.fx[open] summary{margin-bottom:10px}
 .colh .tinfo .cl.on{color:var(--ok)}
 .serbox{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
 .serbox .sc{font-weight:700;font-size:15px}
+#histBox{margin:8px 0}
+#histBox details{border:1px solid var(--line,#33406b);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.03)}
+#histBox summary{cursor:pointer;font-weight:700}
+.hg{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.7}
+.hg b.w{color:#f0c24b}
+.hg .hr{display:grid;grid-template-columns:3.2em 1fr;gap:2px 8px}
+.hg .hr i{font-style:normal;opacity:.7}
 .tile.used .mono{filter:grayscale(1) brightness(.5)}
 .tile .ub{position:absolute;top:2px;left:2px;z-index:3;font-style:normal;font-size:9px;line-height:1;padding:2px 4px;border-radius:4px;background:#000a;color:var(--muted);pointer-events:none}
 #lobbyNote{margin:0 0 10px}
@@ -541,6 +548,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
     <div class="meta" id="roomMeta"></div>
     <div class="rolebar" id="rolebar" hidden></div>
     <div id="fixedWrap" class="fixed-wrap" hidden></div>
+    <div id="histBox" hidden></div>
 
     <div id="lobby" hidden>
       <div class="banner" id="lobbyNote" hidden></div>
@@ -587,7 +595,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261109-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261109-3L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1216,7 +1224,7 @@ function onState(){
 }
 function renderAll(){
   if(!S||!D)return;
-  renderMeta();renderRolebar();renderFixed();
+  renderMeta();renderRolebar();renderFixed();renderHist();
   var ph=S.phase;
   $("#lobby").hidden=!(ph==="lobby"||ph==="countdown");
   $("#draft").hidden=!(ph==="draft"||ph==="done");
@@ -1253,6 +1261,26 @@ function renderMeta(){
   var bans=cfg.rows.split("").filter(function(x){return x==="B"}).length;
   var phase={lobby:"ロビー",countdown:"開始カウントダウン",draft:"ドラフト中",done:"ドラフト完了"}[S.phase];
   $("#roomMeta").innerHTML=role+(isHost?'<span class="badge gold">ホスト</span>':'')+'<span class="badge gold">'+esc(phase)+'</span><span class="num">'+cfg.size+'v'+cfg.size+' / '+cfg.timer+'秒 / BAN 各チーム'+bans+'体 / '+cfg.rows.length+'行</span><span>観戦 '+spec+'人</span>';
+}
+var histOpen=null,histHTML="",histPh="";
+function histList(){return (S&&S.series)?((S.hl||[]).concat(S.hlc?[S.hlc]:[])):[]}
+function renderHist(){      /* シリーズ戦: これまでの試合の、BAN・ピックの履歴 */
+  if(S&&histPh!==S.phase){histPh=S.phase;histOpen=null}
+  var box=$("#histBox"),L=histList();
+  if(!L.length){box.hidden=true;box.innerHTML="";histHTML="";return}
+  var si=serInfo(),auto=!!(S.phase==="done"&&S.res&&si&&(si.over||(si.bo!==99&&S.game>=si.bo)));
+  var nm=function(r,side){return r.tn[side]||("チーム"+r.ab[side])};
+  var hs=function(a){return a.map(function(h){return h?esc(h):"—"}).join("、")||"なし"};
+  var html=L.map(function(r){
+    return '<div class="hg"><b>第'+r.g+'戦</b> '+esc(nm(r,"home"))+'(HOME) vs '+esc(nm(r,"away"))+'(AWAY)'+(r.w?' · <b class="w">'+esc(nm(r,r.w))+' 勝ち</b>':' · 勝敗未記録')+
+      '<div class="hr"><i>BAN</i><span>'+esc(nm(r,"home"))+': '+hs(r.b.home)+'<br>'+esc(nm(r,"away"))+': '+hs(r.b.away)+'</span><i>PICK</i><span>'+esc(nm(r,"home"))+': '+hs(r.p.home)+'<br>'+esc(nm(r,"away"))+': '+hs(r.p.away)+'</span></div></div>';
+  }).join("");
+  var open=histOpen===null?auto:histOpen,key=html+"|"+open;
+  box.hidden=false;
+  if(key===histHTML)return;
+  histHTML=key;
+  box.innerHTML='<details'+(open?' open':'')+'><summary>これまでの履歴('+L.length+'試合)</summary>'+html+'</details>';
+  box.querySelector("details").addEventListener("toggle",function(){histOpen=this.open;histHTML=html+"|"+this.open});
 }
 function serLabel(){      /* シリーズ戦の勝ち数。ホーム/アウェイは、入れ替えを反映した今の側 */
   var si=serInfo();if(!si)return "";
