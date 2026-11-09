@@ -586,7 +586,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261108-14L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261109-1L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -694,6 +694,7 @@ var COST3=Object.assign({},COST0),COST5=Object.assign({},COST0);
 ["ライム","ソー"].forEach(function(h){COST5[h]=2});
 function costBase(sz){return Object.assign({},sz===5?COST5:COST3)}
 var HCLS={};ROLES.forEach(function(g){g.list.forEach(function(h){HCLS[h]=g.k==="captain"?"C":g.k==="jungler"?"J":"L"})});
+var DRIP=false;      /* drip.championship.html だけ true(5戦目の特別設定を有効にする) */
 var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:costBase(3),costEdited:false,series:99,serChk:false,serUse:false,serN:3,swap:true,banOn:true,banN:2,first:[],blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
@@ -969,7 +970,7 @@ async function createRoom(){
   var msg=$("#createMsg"),btn=$("#createBtn");
   if(!needName(msg))return;
   btn.disabled=true;msg.textContent="ルームを作成中…";
-  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),first:cs.first.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serChk?(cs.serUse?cs.serN:99):0,randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
+  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),first:cs.first.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serChk?(cs.serUse?cs.serN:99):0,finalBlind:!!(DRIP&&cs.serChk&&cs.serUse&&cs.serN===5),randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
   joinSpec=false;
   var r=await apiCall({op:"create",uid:myUid,tok:myTok,name:myName,cfg:cfg,free:IS_FREE,hu:hostAuth&&hostAuth.u,hp:hostAuth&&hostAuth.p});
   btn.disabled=false;

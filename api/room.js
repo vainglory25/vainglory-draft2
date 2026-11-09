@@ -178,6 +178,11 @@ function minBudget(hs, fx, cost, hcls, size, mirror) {
   }
   return tot;
 }
+/* 特別仕様(cfg.fin): BO5で4戦目まで2勝2敗なら、5戦目だけ「ブラインド・まとめて・ミラーあり・BANなし」にする。固定BANはそのまま */
+function finalCfg(cfg) {
+  var rows = new Array(cfg.size + 1).join("P");
+  return Object.assign({}, cfg, { rows: rows, first: defaultFirst(rows), blind: true, blindAll: true, mirror: true, ext: "none", pool: 0 });
+}
 function cleanName(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u115f\u1160\u17b4\u17b5\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufeff\uffa0<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 14); }
 function autoHero(S, team, type, avoid, extra) {
   avoid = (avoid || []).concat(extra || []);
@@ -365,9 +370,11 @@ function handle(S, uid, m, body) {
         S.game = (S.game || 1) + 1;
         if (sr) { if (S.res) sr.hist.push({ g: S.game - 1, w: (S.res === "home") !== sr.flip ? "A" : "B" }); if (swp) sr.flip = !sr.flip; }
         S.res = "";
+        if (S.cfg.fin && sr && !S.cfg0 && S.game === 5 && sr.wins.A === 2 && sr.wins.B === 2) { S.cfg0 = S.cfg; S.cfg = finalCfg(S.cfg); }      /* 5戦目だけ特別設定 */
         if (swp && S.tn) { var tt = S.tn.home; S.tn.home = S.tn.away; S.tn.away = tt; }      /* チーム名もチームについていく */
         if (swp) Object.keys(mem).forEach(function (k) { if (mem[k].team === "home") mem[k].team = "away"; else if (mem[k].team === "away") mem[k].team = "home"; });      /* 次の試合は、ホームとアウェイを入れ替える(席の並び・代表者はそのまま) */
       } else {
+        if (S.cfg0) { S.cfg = S.cfg0; S.cfg0 = null; }      /* 特別設定の5戦目を、元の設定に戻す */
         if (S.cfg.fearless) S.used = [];      /* 「最初から」: 使用済みを全部戻す */
         S.game = 1;
         S.series = S.cfg.series ? { wins: { A: 0, B: 0 }, hist: [], flip: false } : null;
@@ -560,7 +567,7 @@ function validCfg(c) {
     if (randPool < minPool || randPool > hs.length - fx.length) return null;
   }
   var first = typeof c.first === "string" && c.first.length === rows.length && /^[HA]+$/.test(c.first) ? c.first : defaultFirst(rows);
-  return { first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
+  return { fin: c.finalBlind === true && series === 5, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
