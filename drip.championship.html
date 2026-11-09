@@ -85,6 +85,18 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 
 .strip{display:flex;gap:6px;flex-wrap:wrap}
+#rStrip{display:flex;flex-direction:column;gap:8px}
+#rStrip .sgrp{display:block}
+#rStrip .th{font-family:var(--f-disp);font-weight:700;letter-spacing:.14em;font-size:12px;padding:2px 0}
+#rStrip .th.home{color:var(--home)}#rStrip .th.away{color:var(--away)}
+#rStrip .sl{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:560px){
+  #rStrip{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #rStrip .th{text-align:center}
+  #rStrip .sl{flex-direction:column}
+  #rStrip .rchip{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+  #rStrip .rchip small{display:inline}
+}
 .rchip{min-width:48px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);text-align:center;font-family:var(--f-disp);line-height:1.2}
 .rchip small{display:block;font-size:10px;letter-spacing:.14em;opacity:.8}
 .rchip b{font-size:15px}
@@ -595,7 +607,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261109-4L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261109-5L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1251,8 +1263,14 @@ function notifyTurn(){
     try{if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}
   }
 }
-function stripHTML(rows){
-  return rows.split("").map(function(t,i){return '<span class="rchip '+t+'"><small>'+(t==="B"?"BAN":"PICK")+'</small><b class="num">'+(i+1)+'</b></span>'}).join("");
+function stripHTML(rows,first,blind){      /* ロビーの進行順: HOMEとAWAYの両方を表示(PCは縦に並べ、スマホは左右に並べる) */
+  var h="",a="";
+  rows.split("").forEach(function(t,i){
+    var fh=!first||first[i]!=="A",nh=blind?i+1:2*i+(fh?1:2),na=blind?i+1:2*i+(fh?2:1);
+    var chip=function(n){return '<span class="rchip '+t+'"><small>'+(t==="B"?"BAN":"PICK")+'</small><b class="num">'+n+'</b></span>'};
+    h+=chip(nh);a+=chip(na);
+  });
+  return '<div class="sgrp"><div class="th home">HOME</div><div class="sl">'+h+'</div></div><div class="sgrp"><div class="th away">AWAY</div><div class="sl">'+a+'</div></div>';
 }
 function renderMeta(){
   var cfg=S.cfg,mem=S.members||{},me=mem[myUid],spec=0;
@@ -1368,7 +1386,7 @@ function renderLobby(){
   }else if(me.spec)rb='<span class="lab">観戦で入室しています。閲覧のみで、操作はできません。</span>';
   else rb='<span class="lab">まだ席に座っていません。参加するには、ホームかアウェイの「参加」を押してください。</span>';
   $("#readybar").innerHTML=rb;
-  $("#rStrip").innerHTML=stripHTML(S.cfg.rows);
+  $("#rStrip").innerHTML=stripHTML(S.cfg.rows,S.cfg.first,S.cfg.blind);
 }
 function nextGame(){      /* 次の試合へ: フィアレスなら、今の試合のピックを使用済みにしてロビーへ。ホームとアウェイを入れ替えるかどうかは、ここで選ぶ */
   var ps=[],bs=[],m="";
