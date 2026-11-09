@@ -595,7 +595,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261109-3L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261109-4L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1289,10 +1289,11 @@ function serLabel(){      /* シリーズ戦の勝ち数。ホーム/アウェ�
   return t;
 }
 function modeChips(){
-  var c=S.cfg,out=[];
+  var c=S.cfg,out=[],nb=(c.rows||"").includes("B");
+  if(S.cfg0)out.push("★最終戦(特別設定)");
+  if(c.blind)out.push(c.blindAll?(nb?"ブラインド(BAN全部→PICK全部をまとめて)":"ブラインド(PICK全部をまとめて)"):"ブラインド(1行ずつ同時に)");
   if(c.mirror)out.push("ミラーあり");
-  if(c.blind)out.push(c.blindAll?"ブラインド(BAN全部→PICK全部をまとめて)":"ブラインド(1行ずつ同時に)");
-  if(c.swap)out.push("次の試合でHOME/AWAY入れ替え");
+  if(c.swap&&!S.cfg0)out.push("次の試合でHOME/AWAY入れ替え");
   if(!(c.rows||"").includes("B"))out.push("BANなし");
   if(c.rolePick)out.push("ロール別ピック");
   if(c.randPool)out.push("ランダムプール "+c.randPool+"体"+(S.avail?"":"(開始時に決定)"));
