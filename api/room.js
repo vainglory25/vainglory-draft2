@@ -181,7 +181,7 @@ function minBudget(hs, fx, cost, hcls, size, mirror) {
 /* 特別仕様(cfg.fin): BO5で4戦目まで2勝2敗なら、5戦目だけ「ブラインド・まとめて・ミラーあり・BANなし」にする。固定BANはそのまま */
 function finalCfg(cfg) {
   var rows = new Array(cfg.size + 1).join("P");
-  return Object.assign({}, cfg, { rows: rows, first: defaultFirst(rows), blind: true, blindAll: true, mirror: true, ext: "none", pool: 0 });
+  return Object.assign({}, cfg, { rows: rows, first: defaultFirst(rows), blind: true, blindAll: true, mirror: true, ext: "none", pool: 0, timer: cfg.finTimer || cfg.timer });
 }
 function cleanName(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u115f\u1160\u17b4\u17b5\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufeff\uffa0<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 14); }
 function autoHero(S, team, type, avoid, extra) {
@@ -567,7 +567,7 @@ function validCfg(c) {
     if (randPool < minPool || randPool > hs.length - fx.length) return null;
   }
   var first = typeof c.first === "string" && c.first.length === rows.length && /^[HA]+$/.test(c.first) ? c.first : defaultFirst(rows);
-  return { fin: c.finalBlind === true && series === 5, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
+  return { fin: c.finalBlind === true && series === 5, finTimer: (+c.finTimer >= 10 && +c.finTimer <= 180) ? Math.round(+c.finTimer) : timer, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
