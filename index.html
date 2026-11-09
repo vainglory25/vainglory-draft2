@@ -487,6 +487,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <label class="optt"><input type="checkbox" id="serChk"><b>シリーズ戦の記録</b>(ドラフト後に、ホストが勝った側を記録する)</label>
           <div class="row" id="serBox" hidden style="margin-top:8px"><span class="lab">試合数</span><div class="seg" id="segSer" role="group" aria-label="シリーズ戦"><button type="button" data-v="0">回数指定なし</button><button type="button" data-v="1">回数指定あり</button></div></div>
           <div class="row" id="serRow" hidden style="margin-top:8px"><label class="lab" for="serN">試合数(奇数 3〜21)</label><span><input class="field num" id="serN" type="number" inputmode="numeric" min="3" max="21" step="2" value="3" style="width:90px"> 試合 (先に <b id="serNeed">2</b> 勝で終了)</span></div>
+          <div class="row" id="finRow" hidden style="margin-top:8px"><label class="lab" for="finT">5試合目(ブラインド)の制限時間(秒)</label><span><input class="field num" id="finT" type="number" inputmode="numeric" min="10" max="180" step="1" value="60" style="width:90px"> 秒 (3体まとめて、全体で)</span></div>
           <p class="hint">ドラフトの完了後に、ホストが勝った側を記録します。「次の試合へ」でロビーに戻ります。回数指定なしは、ホストが「最初から」を押すまで続きます。フィアレスなど、ほかのモードと一緒に使えます。</p>
         </div>
         <div class="optbox">
@@ -586,7 +587,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261109-1L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261109-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -695,7 +696,7 @@ var COST3=Object.assign({},COST0),COST5=Object.assign({},COST0);
 function costBase(sz){return Object.assign({},sz===5?COST5:COST3)}
 var HCLS={};ROLES.forEach(function(g){g.list.forEach(function(h){HCLS[h]=g.k==="captain"?"C":g.k==="jungler"?"J":"L"})});
 var DRIP=false;      /* drip.championship.html だけ true(5戦目の特別設定を有効にする) */
-var cs={mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:costBase(3),costEdited:false,series:99,serChk:false,serUse:false,serN:3,swap:true,banOn:true,banN:2,first:[],blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
+var cs={finT:60,mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:costBase(3),costEdited:false,series:99,serChk:false,serUse:false,serN:3,swap:true,banOn:true,banN:2,first:[],blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
 function toast(t){var el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
@@ -970,7 +971,7 @@ async function createRoom(){
   var msg=$("#createMsg"),btn=$("#createBtn");
   if(!needName(msg))return;
   btn.disabled=true;msg.textContent="ルームを作成中…";
-  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),first:cs.first.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serChk?(cs.serUse?cs.serN:99):0,finalBlind:!!(DRIP&&cs.serChk&&cs.serUse&&cs.serN===5),randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
+  var cfg={leader:!!cs.leader,size:cs.size,timer:cs.timer,ext:cs.ext,pool:cs.ext==="pool"?cs.pool:0,rows:cs.rows.join(""),first:cs.first.join(""),fixedBans:cs.fixed.slice(),heroes:HEROES.slice(),fearless:!!cs.fearless,fearlessBan:!!(cs.fearless&&cs.fbans),mirror:!!cs.mirror,blind:!!cs.blind,blindAll:!!(cs.blind&&cs.blindAll),swap:!!cs.swap,series:cs.serChk?(cs.serUse?cs.serN:99):0,finalBlind:!!(DRIP&&cs.serChk&&cs.serUse&&cs.serN===5),finTimer:cs.finT,randPool:cs.rp||0,rolePick:!!cs.role,hcls:cs.role?HCLS:undefined,budget:cs.bud?cs.budPts:0,cost:cs.bud?cs.cost:undefined};
   joinSpec=false;
   var r=await apiCall({op:"create",uid:myUid,tok:myTok,name:myName,cfg:cfg,free:IS_FREE,hu:hostAuth&&hostAuth.u,hp:hostAuth&&hostAuth.p});
   btn.disabled=false;
@@ -1070,7 +1071,7 @@ function renderCreate(){
   if(document.activeElement!==$("#budPts"))$("#budPts").value=cs.budPts;
   if(cs.bud&&$("#costDet").open)renderCostPool();
   $$("#segSer button").forEach(function(b){b.classList.toggle("on",(+b.dataset.v===1)===cs.serUse)});
-  $("#serChk").checked=cs.serChk;$("#serBox").hidden=!cs.serChk;$("#serRow").hidden=!(cs.serChk&&cs.serUse);$("#serNeed").textContent=Math.ceil(cs.serN/2);
+  $("#finRow").hidden=!(DRIP&&cs.serChk&&cs.serUse&&cs.serN===5);if(document.activeElement!==$("#finT"))$("#finT").value=cs.finT;$("#serChk").checked=cs.serChk;$("#serBox").hidden=!cs.serChk;$("#serRow").hidden=!(cs.serChk&&cs.serUse);$("#serNeed").textContent=Math.ceil(cs.serN/2);
   if(document.activeElement!==$("#serN"))$("#serN").value=cs.serN;
   $("#swapChk").checked=cs.swap;
   $("#blindRow").hidden=!cs.blind;
@@ -1148,6 +1149,7 @@ function wireCreate(){
   $("#bPool").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var h=b.dataset.h;cs.cost[h]=cs.cost[h]>=5?1:cs.cost[h]+1;cs.costEdited=true;renderCostPool()});
   $("#costReset").addEventListener("click",function(){cs.cost=costBase(cs.size);cs.costEdited=false;renderCostPool()});
   [["home","#tnHome"],["away","#tnAway"]].forEach(function(x){$(x[1]).addEventListener("change",function(){act({a:"tname",t:x[0],n:this.value})})});
+  $("#finT").addEventListener("change",function(){var v=Math.round(+this.value)||60;v=Math.max(10,Math.min(180,v));cs.finT=v;this.value=v;renderCreate()});
   $("#serChk").addEventListener("change",function(){cs.serChk=this.checked;renderCreate()});
   $("#segSer").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.serUse=+b.dataset.v===1;renderCreate()});
   $("#segExt").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;cs.ext=b.dataset.v;renderCreate()});
