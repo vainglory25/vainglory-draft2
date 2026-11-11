@@ -302,13 +302,7 @@ function handle(S, uid, m, body) {
     changed = true;
   }
   var msg = null, LD = !!S.cfg.leader;
-  if (body.hello && LD && !me.spec) { var wl = !!body.leader; if (!me.team && me.wantLeader !== wl) { me.wantLeader = wl; changed = true; } }
-  var takeLeader = function (team) {      /* 代表者として着席。すでにいれば一般参加者として着席 */
-    if (LD && me.wantLeader) {
-      var cur = D.leaders[team];
-      if (!cur || cur === uid) me.leader = true; else { me.leader = false; msg = "そのチームにはすでに代表者がいます(一般の参加者として入りました)"; }
-    } else me.leader = false;
-  };
+  var takeLeader = function () { me.leader = false; };      /* 代表者は、ホストがロビーで指定する(本人の希望では代表者になれない) */
   if (body.hello && (body.team === "home" || body.team === "away") && ph === "lobby" && !me.spec && !me.team) {
     if (D.seats[body.team].length >= D.N) msg = "そのチームは満席です";
     else { me.team = body.team; me.t = now; me.ready = false; me.locked = true; takeLeader(body.team); changed = true; }      /* チーム別の参加リンクから入った人は、そのまま着席(席を離れられない) */
@@ -319,11 +313,18 @@ function handle(S, uid, m, body) {
       if (ph !== "lobby" || me.spec || (m.team !== "home" && m.team !== "away")) break;
       if (me.team === m.team) break;
       if (D.seats[m.team].length >= D.N) { msg = "満席です"; break; }
-      if (LD && m.leader === true && isHost) me.wantLeader = true;      /* ホストは、ロビーのボタンから代表者として着席できる */
       me.team = m.team; me.t = now; me.ready = false; takeLeader(m.team); changed = true; break;
     case "stand":
       if (ph !== "lobby" || me.locked) break;
       me.team = ""; me.ready = false; me.leader = false; changed = true; break;
+    case "lead":      /* 代表者の指定(代表者モード): ホストがロビーで、席に座っている人を代表者にする。同じ人をもう一度押すと外す */
+      if (!isHost || !LD || ph !== "lobby" || typeof m.u !== "string") break;
+      var tg = mem[m.u];
+      if (!tg || tg.left || tg.spec || (tg.team !== "home" && tg.team !== "away") || D.seats[tg.team].indexOf(m.u) < 0) break;
+      var was = tg.leader === true;
+      Object.keys(mem).forEach(function (k) { if (mem[k].team === tg.team && mem[k].leader) { mem[k].leader = false; mem[k].ready = false; } });
+      if (!was) { tg.leader = true; tg.ready = false; }
+      changed = true; break;
     case "role":      /* 自分のロール/色の意思表示(任意) */
       if (!seated) break;
       var RL = S.cfg.size === 3 ? ROLES3 : ROLES5;
@@ -529,6 +530,10 @@ function viewFor(S, uid, seen, now) {
     v.se = stepEnd(S.cfg, S.turn);
   }
   if (t && uid !== S.host) delete v.cm; else v.cmp = CMT;      /* 観戦コメントは、観戦者とホストにだけ送る(着席した参加者には見せない) */
+  if (S.phase === "draft" && !S.cfg.blind) {      /* 仮ピック(選択中のヒーロー)は、いま手番のチームの人にだけ送る */
+    var ct = D.cur && D.cur.team;
+    if (!t || t !== ct) { v.pendingHero = ""; v.pendingTurn = -1; }
+  }
   if (!t) delete v.code;      /* ランダム数字は着席した参加者にだけ送る(ホスト・観戦者には送らない) */
   v.members = {};
   Object.keys(S.members).forEach(function (u) {
