@@ -416,13 +416,16 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 /* ロビーの表示切り替え: PC表示=HOMEとAWAYを左右に並べる(狭い画面でも) / モバイル標準=縦に並べる(広い画面では幅をしぼる) */
 /* PC表示のロビー: ドラフト中と同じ、左にHOME・右にAWAY・中央に進行順とヒーロー一覧 */
 .lay-old #lobby:not([hidden]){display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"note note" "tn tn" "role role" "home away" "mid mid";align-items:start}
-@media (min-width:1100px){.lay-old #lobby:not([hidden]){grid-template-columns:minmax(220px,1fr) minmax(0,2.2fr) minmax(220px,1fr);grid-template-areas:"note note note" "tn tn tn" "role role role" "home mid away"}}
+@media (min-width:800px){.lay-old #lobby:not([hidden]){grid-template-columns:minmax(0,1fr) 320px minmax(0,1fr);grid-template-areas:"note note note" "tn tn tn" "role role role" "home mid away"}}
+@media (min-width:800px){.lay-old #lobCenter .pool{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .lay-old #roleInfoL{grid-area:role;margin:0}
 .lay-old #lobbyNote{grid-area:note}.lay-old #tnBox{grid-area:tn}
 .lay-old #teams{display:contents}
 .lay-old #teams .team.home{grid-area:home}.lay-old #teams .team.away{grid-area:away}
 .lay-old #lobCenter{grid-area:mid;min-width:0}
 .lay-old #teams .seat{row-gap:4px}
+.lay-old #teams .seat button{white-space:nowrap}
+.lay-old #teams .seat>:nth-child(3){display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}
 .lay-old #teams .seat>:nth-child(3){grid-column:2 / -1;justify-self:end}
 /* モバイル標準のロビー: ドラフト中と同じ「HOME / AWAY の帯に、席のカードを横一列に」並べる */
 .lay-new .teams{grid-template-columns:1fr;gap:8px}
@@ -636,7 +639,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261112-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261112-5L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1651,7 +1654,7 @@ function wireRoom(){
     if(!tf||!bt||!st)return;
     var on=(lsGet("vgd_cmp")||"0")==="1",cur=null;
     function ap(){tf.classList.toggle("compact",on);bt.textContent=on?"▼ 大きく":"▲ 小さく"}
-    function auto(){return window.innerWidth<=900?"new":"old"}
+    function auto(){return window.innerWidth<800?"new":"old"}
     function setLay(m){
       if(m===cur)return;cur=m;
       document.body.classList.toggle("lay-old",m==="old");document.body.classList.toggle("lay-new",m==="new");
