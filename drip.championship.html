@@ -151,6 +151,16 @@ details.fx[open] summary{margin-bottom:10px}
 .colh .tinfo .cl.on{color:var(--ok)}
 .serbox{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
 .serbox .sc{font-weight:700;font-size:15px}
+#cmBox{margin:8px 0}
+#cmBox details{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.03)}
+#cmBox summary{cursor:pointer;font-weight:700}
+.cmp{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.cmp button{padding:6px 12px;min-height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit;font-size:13px;cursor:pointer}
+.cmp button:hover{border-color:var(--gold)}.cmp button:disabled{opacity:.45}
+.cml{max-height:240px;overflow-y:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:6px;font-size:13px}
+.cml .it{padding:3px 0;display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.cml .it .tm{color:var(--muted);font-size:11px;grid-column:1/3}
+.cml .it b{color:var(--gold);font-weight:700}
 #histBox{margin:8px 0}
 #histBox details{border:1px solid var(--line,#33406b);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.03)}
 #histBox summary{cursor:pointer;font-weight:700}
@@ -563,6 +573,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
     <div class="rolebar" id="rolebar" hidden></div>
     <div id="fixedWrap" class="fixed-wrap" hidden></div>
     <div id="histBox" hidden></div>
+    <div id="cmBox" hidden></div>
 
     <div id="lobby" hidden>
       <div class="banner" id="lobbyNote" hidden></div>
@@ -609,7 +620,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261111-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261111-3L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1238,7 +1249,7 @@ function onState(){
 }
 function renderAll(){
   if(!S||!D)return;
-  renderMeta();renderRolebar();renderFixed();renderHist();
+  renderMeta();renderRolebar();renderFixed();renderHist();renderCm();
   var ph=S.phase;
   $("#lobby").hidden=!(ph==="lobby"||ph==="countdown");
   $("#draft").hidden=!(ph==="draft"||ph==="done");
@@ -1301,6 +1312,21 @@ function renderHist(){      /* シリーズ戦: これまでの試合の、BAN�
   histHTML=key;
   box.innerHTML='<details'+(open?' open':'')+'><summary>これまでの履歴('+L.length+'試合)</summary>'+html+'</details>';
   box.querySelector("details").addEventListener("toggle",function(){histOpen=this.open;histHTML=html+"|"+this.open});
+}
+var cmOpen=null,cmKey="",cmLastN=0;
+function renderCm(){      /* 観戦コメント(定型文): 観戦者とホストだけに表示 */
+  var box=$("#cmBox"),P=S&&S.cmp;
+  if(!P||!S.cm&&!(isSpectator()||isHost)){box.hidden=true;box.innerHTML="";cmKey="";return}
+  var L=S.cm||[],open=cmOpen===null?isSpectator():cmOpen;
+  var pad=function(n){return String(n).padStart(2,"0")};
+  var items=L.slice().reverse().map(function(c){var d=new Date(c.ts);return '<div class="it"><span class="tm">'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+' · 第'+(c.g||1)+'戦'+(c.p==="lobby"?' ロビー':c.p==="done"?' 終了後':' 手番'+((c.tn||0)+1))+'</span><b>'+esc(c.n)+'</b><span>'+esc(P[c.k]||"")+'</span></div>'}).join("")||'<div class="sub">まだコメントはありません</div>';
+  var btns=(isSpectator()||isHost)?'<div class="cmp">'+P.map(function(t,i){return '<button type="button" data-cm="'+i+'">'+esc(t)+'</button>'}).join("")+'</div>':'';
+  var key=L.length+"|"+open+"|"+(L.length?L[L.length-1].ts:0);
+  box.hidden=false;
+  if(key===cmKey)return;
+  cmKey=key;
+  box.innerHTML='<details'+(open?' open':'')+'><summary>観戦コメント('+L.length+'件)'+(isHost&&!isSpectator()?' <small class="sub">ホストと観戦者にだけ表示</small>':'')+'</summary>'+btns+'<div class="cml">'+items+'</div></details>';
+  box.querySelector("details").addEventListener("toggle",function(){cmOpen=this.open;cmKey=""});
 }
 function serLabel(){      /* シリーズ戦の勝ち数。ホーム/アウェイは、入れ替えを反映した今の側 */
   var si=serInfo();if(!si)return "";
@@ -1561,6 +1587,7 @@ function wireRoom(){
     else if(b.dataset.kick)act({a:"kick",u:b.dataset.kick});
     else if(b.dataset.mv)act({a:"move",u:b.dataset.u,d:+b.dataset.mv});
   });
+  $("#cmBox").addEventListener("click",function(e){var cb=e.target.closest("[data-cm]");if(!cb)return;act({a:"cmt",k:+cb.dataset.cm});cb.disabled=true;setTimeout(function(){cb.disabled=false},2000)});
   $("#readybar").addEventListener("click",function(e){if(e.target.closest("[data-ready]"))act({a:"ready"})});
   $("#rolebar").addEventListener("click",function(e){
     var me=(S&&S.members||{})[myUid];if(!me)return;
@@ -1668,11 +1695,12 @@ async function init(){
   var sr=null;
   try{sr=JSON.parse(lsGet("vgd_room")||"null")}catch(e){sr=null}
   if(sr&&sr.id&&!qRoom){$("#joinId").value=sr.id;joinRoom(sr.id,!!sr.spec,!!sr.ld);return}
-  if(qRoom&&qWatch){      /* 観戦リンク: 名前の入力なしで、そのまま観戦者として入室する(名前が未入力なら Player+数字 を仮に使う) */
-    var gen=false;
-    if(!cleanNm($("#myName").value)){$("#myName").value="Player"+(10+Math.floor(Math.random()*90));gen=true}
+  if(qRoom&&qWatch){      /* 観戦リンク: 表示名(IGN)を入力してから、「観戦」で入室する */
     $("#joinId").value=qRoom;
-    joinRoom(qRoom,true,false).then(function(){if(gen)lsDel("vgd_name")});
+    var jm=$("#joinMsg");
+    if(cleanNm($("#myName").value)==="Player"||/^Player\d{2}$/.test(cleanNm($("#myName").value)))$("#myName").value="";
+    jm.textContent="観戦するには、表示名(IGN)を入力して「観戦」を押してください。";
+    try{$("#myName").focus()}catch(e){}
     return;
   }
 }
