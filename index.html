@@ -415,8 +415,9 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 @media (max-width:420px){.teams{grid-template-columns:1fr}}
 /* ロビーの表示切り替え: PC表示=HOMEとAWAYを左右に並べる(狭い画面でも) / モバイル標準=縦に並べる(広い画面では幅をしぼる) */
 /* PC表示のロビー: ドラフト中と同じ、左にHOME・右にAWAY・中央に進行順とヒーロー一覧 */
-.lay-old #lobby:not([hidden]){display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"note note" "tn tn" "role role" "home away" "mid mid";align-items:start}
-@media (min-width:1000px){.lay-old #lobby:not([hidden]){grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"note note note" "tn tn tn" "role role role" "home mid away"}}
+.lay-old #lobby:not([hidden]){display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"note note" "tn tn" "rb rb" "role role" "home away" "mid mid";align-items:start}
+@media (min-width:1000px){.lay-old #lobby:not([hidden]){grid-template-columns:minmax(220px,1fr) minmax(0,2.2fr) minmax(220px,1fr);grid-template-areas:"note note note" "tn tn tn" "rb rb rb" "role role role" "home mid away"}}
+.lay-old #lobby #rolebar{grid-area:rb;margin:0}
 .lay-old #roleInfoL{grid-area:role;margin:0}
 .lay-old #lobbyNote{grid-area:note}.lay-old #tnBox{grid-area:tn}
 .lay-old #teams{display:contents}
@@ -636,7 +637,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261112-8L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261112-10L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1271,6 +1272,7 @@ function renderAll(){
   $("#cd").hidden=ph!=="countdown";
   $("#cdCancel").hidden=!D.myTeam||!!(S.cfg.leader&&!(S.members[myUid]&&S.members[myUid].leader));
   if(ph!=="draft"){$("#fab").hidden=true;document.body.classList.remove("has-fab")}
+  placeRolebar(ph==="lobby"||ph==="countdown");
   if(ph==="lobby"||ph==="countdown"){renderLobby();renderRoleInfo()}
   else{renderTurn();renderBoard();renderRoleInfo();renderPool();renderAct()}
   notifyTurn();
@@ -1542,6 +1544,11 @@ function renderBoard(){
     h+='</div>';
     $(t==="home"?"#colHome":"#colAway").innerHTML=h;
   });
+}
+function placeRolebar(inLobby){      /* 「あなたのロール」は、ロビーではチーム名の入力欄の下、ドラフト中は従来の位置 */
+  var rb=$("#rolebar"),tb=$("#tnBox"),fw=$("#fixedWrap"),lob=$("#lobby");
+  if(inLobby){if(rb.parentNode!==lob)lob.insertBefore(rb,$("#roleInfoL"))}
+  else if(rb.parentNode===lob)fw.parentNode.insertBefore(rb,fw);
 }
 function renderRoleInfo(){      /* 自分のチームの、ロール・色の意思表示を、ロビー(HOME/AWAYの上)とドラフト(ヒーロー一覧の上)に出す */
   var mem=S.members||{},t=D&&D.myTeam,html="";
