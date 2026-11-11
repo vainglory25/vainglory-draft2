@@ -16,7 +16,7 @@
 :root{
   --bg:#0b0d1a; --panel:#131730; --panel2:#1a1f3d; --line:#2b335f;
   --fg:#e9ecf9; --muted:#8f96bd;
-  --home:#5aaaff; --home-d:#14315a; --away:#ff7062; --away-d:#5a1e1a;
+  --home:#5aaaff; --home-d:#14315a; --home-bg:#1d4a85; --away-bg:#7a2f31; --away:#ff7062; --away-d:#5a1e1a;
   --gold:#e8c46c; --ok:#5fd6a0; --warn:#ff9f5a;
   --f-disp:'Chakra Petch','Noto Sans JP',system-ui,sans-serif;
   --f-body:'Noto Sans JP',system-ui,-apple-system,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;
@@ -184,8 +184,8 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 
 .teams{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .team{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
-.team.home{border-top:3px solid var(--home)}
-.team.away{border-top:3px solid var(--away)}
+.team.home{border-top:3px solid var(--home);background:var(--home-bg)}
+.team.away{border-top:3px solid var(--away);background:var(--away-bg)}
 .team h3{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;font-family:var(--f-disp);letter-spacing:.14em;font-size:15px}
 .team.home h3{color:var(--home)}
 .team.away h3{color:var(--away)}
@@ -264,6 +264,8 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 .lay-old #boards,.lay-old .cmpbtn,.lay-old .now,.lay-old .sh{display:none}
 .lay-old #colHome{grid-area:home}
 .lay-old #colAway{grid-area:away}
+.lay-old #colHome,.lay-old #colAway{border:1px solid var(--line);border-radius:12px;padding:8px 10px 10px}
+.lay-old #colHome{background:var(--home-bg)}.lay-old #colAway{background:var(--away-bg)}
 .lay-old #colPool{grid-area:pool}
 .lay-old .band{display:block}
 .lay-old .cell{display:grid;grid-template-columns:20px 44px minmax(0,1fr);align-items:center;gap:8px;min-height:62px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:6px}
@@ -286,8 +288,8 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 .lay-new .lo{display:none}
 .lay-new .stage{display:flex;flex-direction:column;gap:12px}
 .lay-new #colHome,.lay-new #colAway{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 10px 10px}
-.lay-new #colHome{border-left:4px solid var(--home)}
-.lay-new #colAway{border-left:4px solid var(--away)}
+.lay-new #colHome{border-left:4px solid var(--home);background:var(--home-bg)}
+.lay-new #colAway{border-left:4px solid var(--away);background:var(--away-bg)}
 .lay-new .band{display:grid;gap:6px}
 .lay-new #topfix{position:sticky;top:0;z-index:20;background:var(--bg);padding-bottom:4px;margin-bottom:8px}
 .lay-new #topfix .turnbar{position:static;margin-bottom:8px}
@@ -607,7 +609,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261110-2L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261111-1L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="free";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
