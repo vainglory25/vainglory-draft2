@@ -302,22 +302,23 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 /* ===== 3列レイアウト(PC表示を土台に、狭い画面でも常に3列。左右のBAN/PICKは固定、秒数と確定ボタンは画面の下に固定) ===== */
 #dock{display:none}
 .lay-old.lay-col .stage{grid-template-columns:minmax(84px,.8fr) minmax(0,2fr) minmax(84px,.8fr);grid-template-areas:"home pool away";gap:6px;align-items:start}
-.lay-col #colHome,.lay-col #colAway{position:sticky;top:6px;align-self:start;max-height:calc(100vh - 170px);overflow-y:auto;padding:5px 4px 6px;border-radius:10px}
+.lay-col #colHome,.lay-col #colAway{position:sticky;top:6px;align-self:start;max-height:calc(100vh - 12px);overflow-y:auto;padding:5px 4px 6px;border-radius:10px}
 .lay-col .colh{font-size:11px;letter-spacing:.08em;margin:0 0 4px;display:block}
 .lay-col .colh .tinfo{display:block;font-size:10px;letter-spacing:0}
-.lay-col .cell{display:flex;align-items:center;gap:4px;min-height:0;padding:3px 4px;margin-bottom:4px;border-radius:8px}
+.lay-col .cell{display:flex;align-items:center;gap:4px;min-height:0;height:var(--ch,52px);box-sizing:border-box;padding:2px 4px;margin-bottom:4px;border-radius:8px}
 .lay-col .cell .rn{flex:none;width:12px;font-size:10px}
-.lay-old.lay-col .cell .mono,.lay-old.lay-col .cell .ph{flex:none;width:38px;height:38px;font-size:9px}
+.lay-old.lay-col .cell .mono,.lay-old.lay-col .cell .ph{flex:none;width:var(--ic,38px);height:var(--ic,38px);font-size:9px}
 .lay-col .cell .tx{display:none}
+.lay-col .stage[data-sz="m"] .cell .tx{display:block;min-width:0}
+.lay-col .cell .hn{display:none}
 .lay-col .bban{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
 .lay-col .bban .cell{display:block;width:26px;padding:0;margin:0;border:0;background:none;min-height:0;animation:none}
 .lay-old.lay-col .bban .cell .mono,.lay-old.lay-col .bban .cell .ph{width:26px;height:26px;font-size:7px;letter-spacing:0}
 .lay-col .bban .cell .rn,.lay-col .bban .cell .now,.lay-col .bban .cell .tx{display:none}
 .lay-col #colPool .pool-scroll{max-height:none;overflow:visible}
 .lay-col #actbar,.lay-col #myTurn{display:none!important}
-.lay-col .wrap{padding-bottom:150px}
 .lay-col #cmpRow{display:none}
-.lay-col #dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:35;gap:8px;align-items:stretch;padding:6px 8px max(6px,env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
+.lay-col #dock{display:flex;position:sticky;bottom:0;z-index:35;gap:6px;align-items:stretch;padding:6px 0 max(6px,env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);margin-top:8px}
 .lay-col #dock .turnbar{flex:1 1 auto;min-width:0;margin:0;padding:4px 10px;gap:2px 10px;border-radius:12px;position:static}
 .lay-col #dock .tb-l .k,.lay-col #dock .tb-act,.lay-col #dock .tcbtn{display:none}
 .lay-col #dock .tb-l .v{font-size:14px;margin-top:0}
@@ -327,9 +328,10 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 .lay-col #dock .poolrow .pl{display:none}
 .lay-col #dock .poolrow .pc{padding:0 8px}
 .lay-col #dock .poolrow .pc b{font-size:13px}
-.lay-col #dock .fab{position:static;flex:none;min-width:96px;max-width:40%;padding:8px 12px;font-size:14px;box-shadow:none;align-self:stretch}
+.lay-col #dock .poolrow .pc small{display:none}
+@media (max-width:700px){.lay-col #dock{flex-direction:column;gap:6px}.lay-old.lay-col #dock .fab{width:100%;max-width:none;min-height:42px;padding:6px 10px;align-self:auto}.lay-col #dock .fab small{display:none}.lay-col #dock .poolrow{flex-wrap:nowrap}.lay-col #dock .poolrow .pc{font-size:11px;padding:0 5px;white-space:nowrap}.lay-col #dock .poolrow .pc b{font-size:12px}.lay-col #dock .tb-l .v{font-size:13px}.lay-col #dock .tb-r{font-size:24px}}
+.lay-col #dock .fab{position:static;flex:none;min-width:84px;max-width:38%;padding:8px 12px;font-size:14px;box-shadow:none;align-self:stretch}
 .lay-col #dock .fab small{max-width:100%}
-@media (min-width:700px){.lay-col .cell .tx{display:block;min-width:0}.lay-old.lay-col .cell .mono,.lay-old.lay-col .cell .ph{width:44px;height:44px}.lay-col .cell .hn{display:none}}
 /* ===== 新レイアウト(上にチーム固定) ===== */
 .cell .lo,.cell .sh{font-style:normal}
 .lay-new .lo{display:none}
@@ -676,9 +678,9 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
           <div class="searchrow"><input class="field" id="q" placeholder="ヒーロー名で絞り込み" autocomplete="off"></div>
           <div class="pool-scroll"><div id="poolGrid"></div></div>
           <div class="actbar" id="actbar"></div>
+          <div id="dock"></div>
         </div>
       </div>
-      <div id="dock"></div>
     </div>
   </section>
 </div>
@@ -698,7 +700,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261120-1L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261120-5L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1556,6 +1558,25 @@ function codeHTML(){
   var pre=S.code+"-"+(D.myTeam==="home"?1:2)+"_",full=pre+nameOf(myUid);
   return '<div class="codebox"><small>あなたのチームの名前(ゲーム内の名前に付けてください)</small><b class="num">'+esc(full)+'</b> <button class="btn sm" type="button" data-copycode="'+esc(full)+'">コピー</button></div>';
 }
+function fitCols(){      /* 3列表示: 左右のBAN/PICKが、スクロールなしで画面の高さに収まるように、1枠の高さを自動で決める */
+  var st=document.querySelector(".stage");
+  if(!st)return;
+  if(!document.body.classList.contains("lay-col")||$("#draft").hidden){st.style.removeProperty("--ch");st.removeAttribute("data-sz");return}
+  var hm=$("#colHome"),aw=$("#colAway"),n=0,head=0,bb=0;
+  [hm,aw].forEach(function(c){
+    var b=c.querySelector(".band"),h=c.querySelector(".colh"),k=c.querySelector(".bban");
+    n=Math.max(n,b?b.children.length:0);head=Math.max(head,h?h.offsetHeight:0);bb=Math.max(bb,k?k.offsetHeight+6:0);
+  });
+  if(!n)return;
+  var room=window.innerHeight-12-11-head-4-bb,ch=Math.floor(room/n)-4;
+  ch=Math.max(26,Math.min(64,ch));
+  var ic=Math.max(20,Math.min(ch-8,56,hm.clientWidth-8-8-12-4-8));
+  st.style.setProperty("--ch",ch+"px");st.style.setProperty("--ic",ic+"px");
+  st.setAttribute("data-sz",ch>=46?"m":"s");
+}
+var fitT=0;
+window.addEventListener("resize",function(){clearTimeout(fitT);fitT=setTimeout(fitCols,120)});
+window.addEventListener("orientationchange",function(){setTimeout(fitCols,300)});
 function placeTurn(){      /* 3列表示のドラフト中だけ、秒数(手番バー)を画面下の固定欄に入れる */
   var tb=$("#turnbar"),dk=$("#dock"),tf=$("#topfix"),fab=$("#fab");
   var inDock=document.body.classList.contains("lay-col")&&S&&S.phase==="draft";
@@ -1621,6 +1642,7 @@ function renderBoard(){
     }
     $(t==="home"?"#colHome":"#colAway").innerHTML=h;
   });
+  fitCols();
 }
 var rbIn=false;
 function placeRolebar(inLobby){      /* 「あなたのロール」は、ロビーではチーム名の入力欄の下、ドラフト中はHOME/AWAYの(チーム名の)上 */
@@ -1748,7 +1770,7 @@ function wireRoom(){
       if(m===cur)return;cur=m;
       document.body.classList.toggle("lay-old",m!=="new");document.body.classList.toggle("lay-col",m==="col");document.body.classList.toggle("lay-new",m==="new");
       if(m!=="new"){st.insertBefore(hm,pl);st.appendChild(aw)}else{bd.appendChild(hm);bd.appendChild(aw)}
-      placeRolebar();placeTurn();
+      placeRolebar();placeTurn();fitCols();
       if(S&&S.cfg&&D&&S.phase!=="lobby"){try{renderBoard()}catch(e){}}
       $("#layCol").classList.toggle("on",m==="col");$("#layCol").setAttribute("aria-pressed",m==="col");
       $("#layPC").classList.toggle("on",m==="old");$("#layMob").classList.toggle("on",m==="new");
