@@ -314,7 +314,7 @@ vercel-live-feedback{display:none!important}      /* Vercel のツールバー(�
 .lay-old.lay-col #teams .acts{flex-direction:column;align-items:stretch;gap:4px}
 .colctl{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:12px}
 .colctl b{min-width:1.2em;text-align:center}
-#colPool.colfix #poolGrid .pool{grid-template-columns:repeat(var(--pc,4),minmax(0,1fr))}
+#colPool.colfix #poolGrid .pool,#lobbyHeroes.colfix #lhGrid .pool{grid-template-columns:repeat(var(--pc,4),minmax(0,1fr))}
 .lay-old.lay-col .stage{grid-template-columns:minmax(84px,.8fr) minmax(0,2fr) minmax(84px,.8fr);grid-template-areas:"home pool away";gap:6px;align-items:start}
 .lay-col #colHome,.lay-col #colAway{position:sticky;top:6px;align-self:start;max-height:calc(100vh - 12px);overflow-y:auto;padding:5px 4px 6px;border-radius:10px}
 .lay-col .colh{font-size:11px;letter-spacing:.08em;margin:0 0 4px;display:block}
@@ -675,6 +675,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
         <div class="strip" id="rStrip"></div>
         <details id="lobbyHeroes" open>
           <summary>ヒーロー一覧(確認用)</summary>
+          <div class="searchrow" style="justify-content:flex-end"><span class="colctl"><button type="button" class="btn sm ghost colMinus" aria-label="列を減らす">−</button><b class="colN">4</b><button type="button" class="btn sm ghost colPlus" aria-label="列を増やす">＋</button><span class="muted">列</span></span></div>
           <div id="lhGrid"></div>
         </details>
       </div>
@@ -689,7 +690,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
       <div class="stage">
         <div id="colPool">
           <div id="roleInfo" class="roleInfo" hidden></div>
-          <div class="searchrow"><input class="field" id="q" placeholder="ヒーロー名で絞り込み" autocomplete="off"><span class="colctl" id="colCtl"><button type="button" class="btn sm ghost" id="colMinus" aria-label="列を減らす">−</button><b id="colN">4</b><button type="button" class="btn sm ghost" id="colPlus" aria-label="列を増やす">＋</button><span class="muted">列</span></span></div>
+          <div class="searchrow"><input class="field" id="q" placeholder="ヒーロー名で絞り込み" autocomplete="off"><span class="colctl"><button type="button" class="btn sm ghost colMinus" aria-label="列を減らす">−</button><b class="colN">4</b><button type="button" class="btn sm ghost colPlus" aria-label="列を増やす">＋</button><span class="muted">列</span></span></div>
           <div class="pool-scroll"><div id="poolGrid"></div></div>
           <div class="actbar" id="actbar"></div>
           <div id="dock"></div>
@@ -714,7 +715,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261120-9L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261120-10L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -1350,7 +1351,7 @@ function renderAll(){
   $("#cdCancel").hidden=!D.myTeam||!!(S.cfg.leader&&!(S.members[myUid]&&S.members[myUid].leader));
   if(ph!=="draft"){$("#fab").hidden=true;document.body.classList.remove("has-fab")}
   placeRolebar(ph==="lobby"||ph==="countdown");
-  if(ph==="lobby"||ph==="countdown"){renderLobby();renderRoleInfo()}
+  if(ph==="lobby"||ph==="countdown"){renderLobby();renderRoleInfo();applyCols()}
   else{renderTurn();renderBoard();renderRoleInfo();renderPool();applyCols();renderAct()}
   notifyTurn();
   tick();
@@ -1576,15 +1577,17 @@ function colMode(){var c=document.body.classList;return c.contains("lay-col")?"c
 function colStored(){var n=parseInt(lsGet("vgd_cols_"+colMode()),10);return n>=2&&n<=8?n:(colMode()==="col"?4:0)}
 function colShown(){      /* 自動(保存なし)のときは、いま実際に並んでいる列数を数える */
   var n=colStored();if(n)return n;
-  var p=document.querySelector("#poolGrid .pool");
+  var p=document.querySelector($("#draft").hidden?"#lhGrid .pool":"#poolGrid .pool");
   if(p){var c=getComputedStyle(p).gridTemplateColumns.split(" ").filter(Boolean).length;if(c>0)return Math.max(2,Math.min(8,c))}
   return 5;
 }
 function applyCols(){      /* ヒーロー一覧の列数(2〜8列)。レイアウトごとに覚える。3列レイアウトの初期値は4、ほかは自動 */
-  var n=colStored(),cp=$("#colPool");
-  cp.classList.toggle("colfix",!!n);if(n)cp.style.setProperty("--pc",n);else cp.style.removeProperty("--pc");
-  var v=colShown();$("#colN").textContent=v;
-  $("#colMinus").disabled=v<=2;$("#colPlus").disabled=v>=8;
+  var n=colStored();
+  ["#colPool","#lobbyHeroes"].forEach(function(q){var cp=$(q);cp.classList.toggle("colfix",!!n);if(n)cp.style.setProperty("--pc",n);else cp.style.removeProperty("--pc")});
+  var v=colShown();
+  Array.prototype.forEach.call(document.querySelectorAll(".colN"),function(e){e.textContent=v});
+  Array.prototype.forEach.call(document.querySelectorAll(".colMinus"),function(e){e.disabled=v<=2});
+  Array.prototype.forEach.call(document.querySelectorAll(".colPlus"),function(e){e.disabled=v>=8});
 }
 function stepCols(d){var v=Math.max(2,Math.min(8,colShown()+d));lsSet("vgd_cols_"+colMode(),String(v));applyCols()}
 function fitCols(){      /* 3列表示: 左右のBAN/PICKが、スクロールなしで画面の高さに収まるように、1枠の高さを自動で決める */
@@ -1809,8 +1812,8 @@ function wireRoom(){
     bt.addEventListener("click",function(){on=!on;lsSet("vgd_cmp",on?"1":"0");ap()});
     $("#layPC").addEventListener("click",function(){lsSet("vgd_lay","old");setLay("old")});
     $("#layMob").addEventListener("click",function(){lsSet("vgd_lay","new");setLay("new")});
-    $("#colMinus").addEventListener("click",function(){stepCols(-1)});
-    $("#colPlus").addEventListener("click",function(){stepCols(1)});
+    Array.prototype.forEach.call(document.querySelectorAll(".colMinus"),function(b){b.addEventListener("click",function(){stepCols(-1)})});
+    Array.prototype.forEach.call(document.querySelectorAll(".colPlus"),function(b){b.addEventListener("click",function(){stepCols(1)})});
     $("#layCol").addEventListener("click",function(){lsSet("vgd_lay","col");setLay("col")});
     window.addEventListener("resize",function(){if(!lsGet("vgd_lay"))setLay(auto())});
     ap();setLay(pick());
