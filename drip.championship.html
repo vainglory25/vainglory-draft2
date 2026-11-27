@@ -736,7 +736,7 @@ body.img-missing .mono.hv{background:linear-gradient(145deg,hsl(var(--h) 52% 40%
 <script>
 (function(){
 "use strict";
-var BUILD="20261127-3L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
+var BUILD="20261127-4L";      /* 更新のたびに値を変える。開いている画面は、サーバー上の最新と違うと自動で更新される */
 var VG_MODE="host";      /* "host"=ホストログイン / "free"=ログイン不要(部屋作成に回数制限) / "leader"=代表者だけが選ぶ(ホストログイン) / "leader-free"=代表者版の無料版 */
 var IS_FREE=VG_MODE==="free";      /* leader-free = 代表者版の無料版 */
 var ROLES3=["ローム","ジャングル","レーン"],ROLES5=["ローム","ジャングル","トップ","ミッド","ボット"];
@@ -852,7 +852,7 @@ function exBase(sz){return {excl:JSON.parse(JSON.stringify(sz===5?EXCL5:EXCL3)),
 function limMap(){var o=null;cs.lim.forEach(function(r){if(r[1].length){o=o||{};o[r[0]]=r[1].slice()}});return o}
 var HCLS={};ROLES.forEach(function(g){g.list.forEach(function(h){HCLS[h]=g.k==="captain"?"C":g.k==="jungler"?"J":"L"})});
 var DRIP=true;      /* drip.championship.html だけ true(5戦目の特別設定を有効にする) */
-var cs={exChk:true,excl:exBase(3).excl,lim:exBase(3).lim,exEdited:false,finT:60,mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:costBase(3),costEdited:false,series:99,serChk:true,serUse:true,serN:5,swap:true,banOn:true,banN:2,first:[],blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ","トニー"]};   /* 既定の固定BAN(作成画面で変更できます) */
+var cs={exChk:false,excl:exBase(3).excl,lim:exBase(3).lim,exEdited:false,finT:60,mirror:false,blind:false,role:false,rp:0,bud:false,budPts:6,budTouched:false,cost:costBase(3),costEdited:false,series:99,serChk:true,serUse:true,serN:5,swap:true,banOn:true,banN:2,first:[],blindAll:false,extBak:"pool",custom:true,leader:false,fearless:false,fbans:false,size:3,timer:20,bans:2,ext:"pool",pool:120,rows:[],fixed:["チャーンウォーカー","ヴィオラ","トニー"]};   /* 既定の固定BAN(作成画面で変更できます) */
 
 function nowS(){return Date.now()+off}
 function toast(t){var el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
