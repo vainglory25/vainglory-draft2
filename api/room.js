@@ -125,6 +125,23 @@ function clash(cfg, h, mine) {
   if (!ex) return false;
   return mine.some(function (x) { return x !== h && ex.indexOf(x) >= 0; });
 }
+/* 限定: lim[X] を持つヒーロー X を選んだチームは、残りの枠を lim[X] からしか選べない。loose なら、数や空きは見ない */
+function limBad(S, cfg, h, mine, team, loose) {
+  var L = cfg.lim;
+  if (!L) return false;
+  var all = mine.filter(function (x) { return x !== h; }).concat([h]);
+  for (var i = 0; i < all.length; i++) {
+    var X = all[i], t = L[X];
+    if (!t) continue;
+    for (var j = 0; j < all.length; j++) if (all[j] !== X && t.indexOf(all[j]) < 0) return true;
+    if (loose) continue;
+    if (t.length + 1 < cfg.size) return true;
+    var av = 0;
+    t.forEach(function (y) { if (all.indexOf(y) < 0 && !taken(S, y, team, "P")) av++; });
+    if (av < cfg.size - all.length) return true;
+  }
+  return false;
+}
 /* BANなら「取られていない」だけ。PICKは、ロール別・予算制の条件も見る */
 function pickable(S, h, team, type, extra) {
   if (taken(S, h, team, type)) return false;
@@ -135,6 +152,7 @@ function pickable(S, h, team, type, extra) {
   var cfg = S.cfg, mine = pickedBy(S, team).concat((extra || []).filter(function (x) { return x !== h; })), left = cfg.size - mine.length - 1;
   if (left < 0) return false;
   if (clash(cfg, h, mine)) return false;      /* 併用不可の組み合わせ */
+  if (limBad(S, cfg, h, mine, team)) return false;      /* 限定 */
   var cnt = { C: 0, J: 0, L: 0 }, spent = 0;
   mine.forEach(function (x) { if (cfg.hcls) cnt[cfg.hcls[x]]++; if (cfg.cost) spent += cfg.cost[x]; });
   if (cfg.hcls) { var c = cfg.hcls[h]; if (cnt[c] >= quotaOf(cfg)[c]) return false; cnt[c]++; }
@@ -205,7 +223,7 @@ function autoHero(S, team, type, avoid, extra) {
   var ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && pickable(S, h, team, type, extra); });
   if (!ok.length) {      /* 条件を満たす人がいなければ、取られていない中で、役割が満員でなく、いちばん安いヒーロー(強いヒーローを引かないように) */
     var mineX = type === "P" ? pickedBy(S, team).concat(extra || []) : [];
-    ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type) && !clash(S.cfg, h, mineX); });
+    ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type) && !clash(S.cfg, h, mineX) && !limBad(S, S.cfg, h, mineX, team, true); });
     if (!ok.length) ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type); });
     if (type === "P" && (S.cfg.cost || S.cfg.hcls) && ok.length) {
       var mineF = pickedBy(S, team).concat(extra || []), cf = { C: 0, J: 0, L: 0 }, qf = quotaOf(S.cfg);
@@ -615,8 +633,15 @@ function validCfg(c) {
       (excl[b] = excl[b] || []).indexOf(a) < 0 && excl[b].push(a);
     });
   }
+  var lim = null;      /* 限定: { X:[Y,Z] }。一覧にないヒーロー・自分自身は無視 */
+  if (c.lim && typeof c.lim === "object") {
+    Object.keys(c.lim).slice(0, 30).forEach(function (x) {
+      var ts = Array.isArray(c.lim[x]) ? c.lim[x].filter(function (y, i, a) { return y !== x && hs.indexOf(y) >= 0 && a.indexOf(y) === i; }) : [];
+      if (hs.indexOf(x) >= 0 && ts.length) { lim = lim || {}; lim[x] = ts; }
+    });
+  }
   var first = typeof c.first === "string" && c.first.length === rows.length && /^[HA]+$/.test(c.first) ? c.first : defaultFirst(rows);
-  return { fin: c.finalBlind === true && series === 5, finTimer: (+c.finTimer >= 10 && +c.finTimer <= 180) ? Math.round(+c.finTimer) : timer, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true, excl: excl };
+  return { fin: c.finalBlind === true && series === 5, finTimer: (+c.finTimer >= 10 && +c.finTimer <= 180) ? Math.round(+c.finTimer) : timer, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true, excl: excl, lim: lim };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
