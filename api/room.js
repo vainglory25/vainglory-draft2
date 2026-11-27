@@ -119,6 +119,12 @@ function pickedBy(S, team) {
   return out;
 }
 function quotaOf(cfg) { return { C: 1, J: 1, L: cfg.size - 2 }; }
+/* 併用不可: h と、すでに選んだ mine の中に、一緒に選べない組み合わせがあるか(自チームの中だけ。BANには関係しない) */
+function clash(cfg, h, mine) {
+  var ex = cfg.excl && cfg.excl[h];
+  if (!ex) return false;
+  return mine.some(function (x) { return x !== h && ex.indexOf(x) >= 0; });
+}
 /* BANなら「取られていない」だけ。PICKは、ロール別・予算制の条件も見る */
 function pickable(S, h, team, type, extra) {
   if (taken(S, h, team, type)) return false;
@@ -128,6 +134,7 @@ function pickable(S, h, team, type, extra) {
   }
   var cfg = S.cfg, mine = pickedBy(S, team).concat((extra || []).filter(function (x) { return x !== h; })), left = cfg.size - mine.length - 1;
   if (left < 0) return false;
+  if (clash(cfg, h, mine)) return false;      /* 併用不可の組み合わせ */
   var cnt = { C: 0, J: 0, L: 0 }, spent = 0;
   mine.forEach(function (x) { if (cfg.hcls) cnt[cfg.hcls[x]]++; if (cfg.cost) spent += cfg.cost[x]; });
   if (cfg.hcls) { var c = cfg.hcls[h]; if (cnt[c] >= quotaOf(cfg)[c]) return false; cnt[c]++; }
@@ -197,7 +204,9 @@ function autoHero(S, team, type, avoid, extra) {
   avoid = (avoid || []).concat(extra || []);
   var ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && pickable(S, h, team, type, extra); });
   if (!ok.length) {      /* 条件を満たす人がいなければ、取られていない中で、役割が満員でなく、いちばん安いヒーロー(強いヒーローを引かないように) */
-    ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type); });
+    var mineX = type === "P" ? pickedBy(S, team).concat(extra || []) : [];
+    ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type) && !clash(S.cfg, h, mineX); });
+    if (!ok.length) ok = S.cfg.heroes.filter(function (h) { return avoid.indexOf(h) < 0 && !taken(S, h, team, type); });
     if (type === "P" && (S.cfg.cost || S.cfg.hcls) && ok.length) {
       var mineF = pickedBy(S, team).concat(extra || []), cf = { C: 0, J: 0, L: 0 }, qf = quotaOf(S.cfg);
       if (S.cfg.hcls) mineF.forEach(function (x) { cf[S.cfg.hcls[x]]++; });
@@ -595,8 +604,19 @@ function validCfg(c) {
     var minPool = size * 2 + bans * 2 + (hcls ? 4 : 0);
     if (randPool < minPool || randPool > hs.length - fx.length) return null;
   }
+  var excl = null;      /* 併用不可: [[A,B],...] → { A:[B], B:[A] }(双方向)。名前が一覧にない・同じヒーロー同士は無視 */
+  if (Array.isArray(c.excl)) {
+    c.excl.slice(0, 60).forEach(function (pr) {
+      if (!Array.isArray(pr) || pr.length !== 2) return;
+      var a = pr[0], b = pr[1];
+      if (a === b || hs.indexOf(a) < 0 || hs.indexOf(b) < 0) return;
+      excl = excl || {};
+      (excl[a] = excl[a] || []).indexOf(b) < 0 && excl[a].push(b);
+      (excl[b] = excl[b] || []).indexOf(a) < 0 && excl[b].push(a);
+    });
+  }
   var first = typeof c.first === "string" && c.first.length === rows.length && /^[HA]+$/.test(c.first) ? c.first : defaultFirst(rows);
-  return { fin: c.finalBlind === true && series === 5, finTimer: (+c.finTimer >= 10 && +c.finTimer <= 180) ? Math.round(+c.finTimer) : timer, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true };
+  return { fin: c.finalBlind === true && series === 5, finTimer: (+c.finTimer >= 10 && +c.finTimer <= 180) ? Math.round(+c.finTimer) : timer, first: first, mirror: c.mirror === true, blind: blind, blindAll: blind && c.blindAll === true, swap: c.swap === true, rolePick: !!hcls, hcls: hcls, budget: budget, cost: cost, randPool: randPool, series: series, size: size, timer: timer, rows: rows, fixedBans: fx, heroes: hs.slice(), ext: ext, pool: pool, leader: c.leader === true, fearless: fl, fearlessBan: fl && c.fearlessBan === true, excl: excl };
 }
 var okUid = function (u) { return typeof u === "string" && /^[A-Za-z0-9]{3,40}$/.test(u); };
 var okTok = function (t) { return typeof t === "string" && t.length >= 8 && t.length <= 64; };
